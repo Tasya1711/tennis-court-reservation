@@ -1,0 +1,27 @@
+# dependencies
+/node_modules
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# vercel
+/.vercel
+
+# environment files with real secrets — never commit these
+.env
+.env.local
+.env.*.local
+
+# Prisma
+/prisma/*.db
+
+# build/misc
+/build
+*.tsbuildinfo
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

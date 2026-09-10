@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 moved connection URLs out of schema.prisma and into
+// prisma.config.ts. The CLI (migrate/studio) connects via the direct URL
+// there; the runtime PrismaClient in lib/prisma.ts connects via the pooled
+// URL through a driver adapter (@prisma/adapter-pg) instead — see
+// ARCHITECTURE.md §4.3 for why pooled vs. direct matters on Supabase.
+datasource db {
+  provider = "postgresql"
+}
+
+// Mirrors auth.users 1:1 (id is the same UUID). auth.users itself is managed
+// by Supabase Auth, not by Prisma — see the on_auth_user_created trigger in
+// the migration, which is what actually creates this row.
+model Profile {
+  id        String @id @db.Uuid
+  username  String @unique
+  avatarUrl String? @map("avatar_url")
+  role      Role   @default(CUSTOMER)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+
+  @@map("profiles")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model Court {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @unique
+  type      CourtType @default(INDOOR)
+  priceUah  Int       @map("price_uah")
+  isActive  Boolean   @default(true) @map("is_active")
+  sortOrder Int       @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+
+  @@map("courts")
+}
+
+enum CourtType {
+  INDOOR
+  OUTDOOR
+}
+
+// Single-row table for the one venue this app serves (ARCHITECTURE.md's
+// single-venue decision) — lets the address/name shown in the UI come from
+// the database instead of being hardcoded, without the overhead of a full
+// multi-venue schema this app doesn't need yet.
+model Venue {
+  id      String @id @default("main")
+  name    String
+  address String
+
+  @@map("venue")
+}
+
+model Reservation {
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  courtId String @map("court_id") @db.Uuid
+
+  // Kyiv civil-time fields, denormalized for display/queries
+  date      DateTime @db.Date
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+
+  // Canonical UTC instants — the real source of truth for ordering/locking,
+  // derived from (date, startTime/endTime) interpreted in Europe/Kyiv
+  startAt DateTime @map("start_at")
+  endAt   DateTime @map("end_at")
+
+  status        ReservationStatus @default(PENDING_PAYMENT)
+  paymentStatus PaymentStatus     @default(UNPAID) @map("payment_status")
+
+  orderReference String @unique @map("order_reference")
+  amountUah      Int    @map("amount_uah")
+
+  // PENDING_PAYMENT hold expiry
+  expiresAt DateTime @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  court    Court     @relation(fields: [courtId], references: [id], onDelete: Restrict)
+  payments Payment[]
+
+  // The actual double-booking guard is a partial unique index added by hand
+  // in the migration SQL (Prisma's schema language has no WHERE clause for
+  // @@unique): UNIQUE (court_id, start_at) WHERE status IN
+  // ('PENDING_PAYMENT', 'CONFIRMED'). See migration.sql.
+
+  @@index([userId])
+  @@index([courtId, date])
+  @@map("reservations")
+}
+
+enum ReservationStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+  FAILED
+}
+
+// Audit trail of every payment/webhook event, independent of the
+// reservation's current status (WayForPay retries webhooks for up to 4 days).
+model Payment {
+  id            String @id @default(uuid()) @db.Uuid
+  reservationId String @map("reservation_id") @db.Uuid
+
+  provider       String @default("wayforpay")
+  orderReference String @map("order_reference")
+  amountUah      Int    @map("amount_uah")
+  status         String
+  rawPayload     Json   @map("raw_payload")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@map("payments")
+}
+
+// DB-backed rate limiting for register/login/reservation-create (see
+// ARCHITECTURE.md §9) — no Redis/Upstash needed for the MVP.
+model AuthAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([key, createdAt])
+  @@map("auth_attempts")
+}
