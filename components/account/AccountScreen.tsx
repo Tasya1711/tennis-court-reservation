@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CancelReservationButton } from "@/components/account/CancelReservationButton";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 type Reservation = {
   id: string;
@@ -62,7 +63,8 @@ export function AccountScreen({
         <Image src="/images/first-page_photo.jpeg" alt="" fill priority sizes="100vw" className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/15 to-black/55" />
 
-        <div className="relative z-10 flex justify-end">
+        <div className="relative z-10 flex items-center justify-end gap-2">
+          <LogoutButton variant="icon" />
           <Link
             href="/home"
             aria-label="На головну"
