@@ -25,12 +25,27 @@ function slotRangeLabel(startTime: string) {
   return `${startTime} - ${end}`;
 }
 
+// Display-only: derives the reference's "Chestnut Av." style short label
+// from the real venue address ("12 Chestnut Avenue") — strips the house
+// number, abbreviates "Avenue"/"Street"/"Boulevard". Not a hardcoded court
+// list — just a display transform of real venue data already in the DB.
+function shortVenueLabel(address: string | null): string {
+  if (!address) return "";
+  return address
+    .replace(/^\d+\s+/, "")
+    .replace(/\bAvenue\b/i, "Av.")
+    .replace(/\bStreet\b/i, "St.")
+    .replace(/\bBoulevard\b/i, "Blvd.");
+}
+
 export function ReserveFlow({
   courts,
   avatarUrl,
+  venueAddress,
 }: {
   courts: Court[];
   avatarUrl: string | null;
+  venueAddress: string | null;
 }) {
   const router = useRouter();
   const dates = getBookableDates();
@@ -54,6 +69,7 @@ export function ReserveFlow({
   const [bookingError, setBookingError] = useState<string | null>(null);
 
   const selectedCourt = courts.find((c) => c.id === courtId) ?? null;
+  const shortAddress = shortVenueLabel(venueAddress);
 
   // Reset the selected time whenever court/date changes — the documented
   // "adjusting state when a prop changes" pattern (render-time setState),
@@ -135,7 +151,7 @@ export function ReserveFlow({
           top-right, TENNIS / COURTS / RESERVATION wordmark, court pills. */}
       <div className="relative flex h-[46vh] min-h-[340px] w-full flex-col overflow-hidden px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-5">
         <Image src="/images/first-page_photo.jpeg" alt="" fill priority sizes="100vw" className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/15 to-black/55" />
 
         <div className="relative z-10 flex items-center justify-between">
           <div className="h-10 w-10 overflow-hidden rounded-full border-2 border-white/80 shadow-lg">
@@ -149,18 +165,16 @@ export function ReserveFlow({
           </div>
           <Link
             href="/home"
-            aria-label="Назад"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur-sm"
+            aria-label="На головну"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/25 backdrop-blur-sm"
           >
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+            <TennisBallIcon />
           </Link>
         </div>
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center text-center">
           <p className="text-xs font-medium tracking-[0.3em] text-[#f2c9a8]">TENNIS</p>
-          <p className="text-[40px] font-extrabold leading-none tracking-tight text-[#f2c9a8]">COURTS</p>
+          <p className="text-[44px] font-black leading-none tracking-tight text-[#f2c9a8]">COURTS</p>
           <p className="mt-1 text-xs font-medium tracking-[0.3em] text-[#f2c9a8]">RESERVATION</p>
         </div>
 
@@ -176,7 +190,7 @@ export function ReserveFlow({
                   : "bg-black/35 text-white backdrop-blur-sm"
               }`}
             >
-              {court.name}
+              {shortAddress ? `${shortAddress} ${court.name}` : court.name}
             </button>
           ))}
         </div>
@@ -227,7 +241,7 @@ export function ReserveFlow({
                     ? "cursor-not-allowed bg-black/5 text-neutral-300 line-through"
                     : slot.startTime === startTime
                       ? "bg-neutral-900 text-white"
-                      : "bg-white text-neutral-700 active:scale-[0.97]"
+                      : "bg-black/5 text-neutral-700 active:scale-[0.97]"
                 }`}
               >
                 {slotRangeLabel(slot.startTime)}
@@ -270,6 +284,23 @@ function CalendarIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M4.5 6h15a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75V6.75A.75.75 0 0 1 4.5 6Z"
+      />
+    </svg>
+  );
+}
+
+function TennisBallIcon() {
+  // Matches the reference's top-right circular icon (a small tennis ball),
+  // reused as the link back to /home — same "necessary navigation reuses
+  // the reference's icon slot" pattern as M4's home-screen icon.
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5">
+      <circle cx="12" cy="12" r="9" fill="#d9f477" />
+      <path
+        d="M12 3c-2.5 2.2-2.5 15.8 0 18M12 3c2.5 2.2 2.5 15.8 0 18"
+        stroke="white"
+        strokeWidth="1"
+        fill="none"
       />
     </svg>
   );
