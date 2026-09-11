@@ -70,7 +70,7 @@ Next.js Route Handlers under `app/api/**`, each one: parses/validates input with
 | `/api/profile/avatar` | POST | user | upload/replace avatar |
 | `/api/admin/courts` | GET/POST | admin | list/create courts |
 | `/api/admin/courts/:id` | PATCH | admin | edit a court |
-| `/api/cron/expire-reservations` | POST | `CRON_SECRET` header, not a user session | expire stale holds |
+| `/api/cron/expire-reservations` | GET | `CRON_SECRET` header, not a user session | expire stale holds (housekeeping only — see §7) |
 
 Registration/login/logout are not custom routes — the frontend calls the Supabase Auth SDK directly (`supabase.auth.signUp/signInWithPassword/signOut`), which talks to Supabase's own `/auth/v1` endpoints.
 
@@ -227,10 +227,10 @@ Supabase ships its own CLI/migration system (`supabase/migrations`, tied to its 
 
 ## 7. Reservation & double-booking protection (flow)
 
-1. `GET /api/courts/:id/availability?date=YYYY-MM-DD` computes the 14 possible slots (08:00→21:00 start times) in Europe/Kyiv, marks any slot covered by an existing `CONFIRMED` or still-live `PENDING_PAYMENT` reservation as unavailable. Computed entirely server-side from the database — the frontend never calculates availability itself.
-2. `POST /api/reservations` — re-checks availability, then inserts a `PENDING_PAYMENT` reservation with `expiresAt = now + 10 minutes`. If the partial unique index rejects the insert (someone else just took it), the API returns `409` and the frontend shows "this slot was just taken."
+1. `GET /api/courts/:id/availability?date=YYYY-MM-DD` computes the 14 possible slots (08:00→21:00 start times) in Europe/Kyiv. A slot counts as unavailable if it's `CONFIRMED`, or a still-live `PENDING_PAYMENT` (`expiresAt` still in the future) — an expired-but-not-yet-swept `PENDING_PAYMENT` is correctly treated as available here, independent of whether the cron below has run yet. Computed entirely server-side from the database — the frontend never calculates availability itself.
+2. `POST /api/reservations` — re-checks availability, lazily flips that *specific* slot to `EXPIRED` if its prior hold has already lapsed, then inserts a new `PENDING_PAYMENT` reservation with `expiresAt = now + 10 minutes`. If the partial unique index rejects the insert (someone else just took it in the meantime), the API returns `409` and the frontend shows "this slot was just taken."
 3. `POST /api/payments/create` — builds and signs the WayForPay purchase request for that reservation, returns the redirect URL.
-4. Vercel Cron hits `POST /api/cron/expire-reservations` every 2 minutes (protected by a `CRON_SECRET` header) — flips any `PENDING_PAYMENT` row past its `expiresAt` to `EXPIRED`, which frees the slot for new bookings since the unique index only covers `PENDING_PAYMENT`/`CONFIRMED`.
+4. `GET /api/cron/expire-reservations`, invoked by Vercel Cron (GET, not POST — corrected against Vercel's actual docs; it sends `Authorization: Bearer $CRON_SECRET` automatically), sweeps every `PENDING_PAYMENT` row past its `expiresAt` to `EXPIRED`. **This is housekeeping, not what keeps booking correct** — steps 1 and 2 above already make expiry self-healing at read/write time regardless of this job's cadence, so it only affects how quickly the `status` column itself reflects reality (for the account page, a future admin view, etc.), not whether a slot is actually bookable. Worth knowing because Vercel's free Hobby plan only allows cron jobs to run **once a day** — an expression like the originally-planned "every 2 minutes" fails to deploy on it entirely. `vercel.json` schedules it for `0 3 * * *` (03:00 UTC daily) accordingly; tightening this to every few minutes only matters cosmetically and only requires a paid Vercel plan.
 5. `POST /api/reservations/:id/cancel` — only the owning user (or admin), only while `CONFIRMED` and before `startAt`; sets `CANCELLED`, which also frees the slot.
 
 ## 8. Payment architecture & webhook flow
