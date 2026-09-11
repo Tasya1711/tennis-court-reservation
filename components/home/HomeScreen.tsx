@@ -52,15 +52,21 @@ export function HomeScreen({
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 h-11 w-11 overflow-hidden rounded-full border-2 border-white/80 shadow-lg"
+          className="relative z-10"
         >
-          <Image
-            src={avatarUrl ?? "/images/user-photo.jpeg"}
-            alt=""
-            fill
-            sizes="44px"
-            className="object-cover"
-          />
+          <Link
+            href="/account"
+            aria-label="Мій профіль"
+            className="relative block h-11 w-11 overflow-hidden rounded-full border-2 border-white/80 shadow-lg"
+          >
+            <Image
+              src={avatarUrl ?? "/images/user-photo.jpeg"}
+              alt=""
+              fill
+              sizes="44px"
+              className="object-cover"
+            />
+          </Link>
         </motion.div>
 
         <motion.div
