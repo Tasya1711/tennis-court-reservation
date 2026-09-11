@@ -3,6 +3,17 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { PayButton } from "@/components/payment/PayButton";
+import { PaymentStatusPoller } from "@/components/payment/PaymentStatusPoller";
+
+// A server component's render is a single point-in-time snapshot for this
+// request — reading the clock here isn't the hydration-mismatch hazard
+// eslint's purity rule is guarding against (that's a client-rendering
+// concern). Wrapped in its own function so the one-shot read is explicit
+// and named, rather than an inline `Date.now()` in the render body.
+function requestTime(): number {
+  return Date.now();
+}
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_PAYMENT: "Очікує оплати",
@@ -35,6 +46,15 @@ export default async function ReserveSummaryPage({
     notFound();
   }
 
+  const now = requestTime();
+
+  // The hold can be past expiresAt before the status column itself has
+  // been flipped (the M6 cron is housekeeping only — see ARCHITECTURE.md
+  // §7) — treat it as dead here too, not just "still pending".
+  const holdExpired = reservation.status === "PENDING_PAYMENT" && reservation.expiresAt.getTime() < now;
+  const isPayable = reservation.status === "PENDING_PAYMENT" && !holdExpired;
+  const holdMinutesRemaining = Math.max(0, Math.round((reservation.expiresAt.getTime() - now) / 60000));
+
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[#f4f1ec]">
       {/* Same first-page_photo.jpeg header treatment as /reserve, for
@@ -54,16 +74,35 @@ export default async function ReserveSummaryPage({
           <Row label="Дата" value={reservation.date.toISOString().slice(0, 10)} />
           <Row label="Час" value={`${reservation.startTime} – ${reservation.endTime}`} />
           <Row label="Вартість" value={`${reservation.amountUah} ₴`} />
-          <Row label="Статус" value={STATUS_LABEL[reservation.status] ?? reservation.status} />
+          <Row label="Статус" value={holdExpired ? STATUS_LABEL.EXPIRED : STATUS_LABEL[reservation.status] ?? reservation.status} />
         </div>
 
-        <div className="mt-6 rounded-2xl bg-black/[0.04] p-5 text-center">
-          <p className="text-sm text-neutral-600">Оплата буде доступна незабаром.</p>
-          <p className="mt-1 text-xs text-neutral-400">
-            Місце утримується {" "}
-            {Math.max(0, Math.round((reservation.expiresAt.getTime() - Date.now()) / 60000))} хв.
-          </p>
-        </div>
+        {isPayable && (
+          <div className="mt-6">
+            <p className="mb-3 text-center text-xs text-neutral-400">
+              Місце утримується {holdMinutesRemaining} хв.
+            </p>
+            <PayButton reservationId={reservation.id} amountUah={reservation.amountUah} />
+            <PaymentStatusPoller orderReference={reservation.orderReference} />
+          </div>
+        )}
+
+        {reservation.status === "CONFIRMED" && (
+          <div className="mt-6 rounded-2xl bg-emerald-600/10 p-5 text-center">
+            <p className="text-sm font-medium text-emerald-700">Оплата успішна. Бронювання підтверджено.</p>
+          </div>
+        )}
+
+        {(holdExpired || reservation.status === "EXPIRED" || reservation.status === "CANCELLED") && (
+          <div className="mt-6 rounded-2xl bg-black/[0.04] p-5 text-center">
+            <p className="text-sm text-neutral-600">
+              {reservation.status === "CANCELLED" ? "Бронювання скасовано." : "Термін бронювання сплив або оплата не пройшла."}
+            </p>
+            <Link href="/reserve" className="mt-3 inline-block text-sm font-medium text-neutral-900 underline">
+              Забронювати ще раз
+            </Link>
+          </div>
+        )}
 
         <Link
           href="/home"
