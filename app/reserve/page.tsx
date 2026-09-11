@@ -10,14 +10,21 @@ export default async function ReservePage() {
     redirect("/auth");
   }
 
-  const [courts, profile] = await Promise.all([
+  const [courts, profile, venue] = await Promise.all([
     prisma.court.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: "asc" },
       select: { id: true, name: true, type: true, priceUah: true },
     }),
     prisma.profile.findUnique({ where: { id: data.claims.sub } }),
+    prisma.venue.findUnique({ where: { id: "main" } }),
   ]);
 
-  return <ReserveFlow courts={courts} avatarUrl={profile?.avatarUrl ?? null} />;
+  return (
+    <ReserveFlow
+      courts={courts}
+      avatarUrl={profile?.avatarUrl ?? null}
+      venueAddress={venue?.address ?? null}
+    />
+  );
 }
