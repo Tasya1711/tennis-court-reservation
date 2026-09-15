@@ -1,16 +1,15 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Intro } from "@/components/intro/Intro";
 
 export default async function LandingPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
+  const destination = data?.claims ? "/home" : "/auth";
 
-  // A logged-in visitor shouldn't be shown the splash → login sequence
-  // every time they open the app — send them straight to /home.
-  if (data?.claims) {
-    redirect("/home");
-  }
+  // TEMP DEBUG — remove once the intro-skip bug is confirmed fixed.
+  console.log("[INTRO DEBUG] app/page.tsx rendering LandingPage, destination =", destination);
 
-  return <Intro />;
+  // The splash plays on every load/session, regardless of auth state —
+  // only where it hands off to afterward differs.
+  return <Intro destination={destination} />;
 }
