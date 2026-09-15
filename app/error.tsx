@@ -1,6 +1,7 @@
 "use client"; // Error boundaries must be Client Components
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { ErrorScreen } from "@/components/error/ErrorScreen";
 
 // Root-level catch-all for uncaught exceptions in any page/layout below the
@@ -16,6 +17,8 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  const t = useTranslations("Errors");
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -23,8 +26,8 @@ export default function ErrorPage({
   return (
     <ErrorScreen
       code="500"
-      title="Щось пішло не так"
-      message="Сталася непередбачена помилка. Спробуйте ще раз."
+      title={t("serverTitle")}
+      message={t("serverMessage")}
       onRetry={retry}
     />
   );

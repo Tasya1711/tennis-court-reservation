@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { EditProfileForm } from "@/components/account/EditProfileForm";
@@ -22,14 +23,15 @@ export default async function EditProfilePage() {
   const email = data.claims.email ?? "";
   const avatarUrl = profile?.avatarUrl ?? null;
   const username = profile?.username ?? "";
+  const t = await getTranslations("AccountEdit");
 
-  const header = <h1 className="mb-6 text-lg font-semibold text-white">Редагувати профіль</h1>;
+  const header = <h1 className="mb-6 text-lg font-semibold text-white">{t("title")}</h1>;
 
   const emailRow = (
     <div className="mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-      <p className="text-[13px] text-white/50">Email</p>
+      <p className="text-[13px] text-white/50">{t("emailLabel")}</p>
       <p className="text-[15px] text-white/80">{email}</p>
-      <p className="mt-1 text-xs text-white/35">Email і пароль змінити не можна.</p>
+      <p className="mt-1 text-xs text-white/35">{t("emailNotice")}</p>
     </div>
   );
 

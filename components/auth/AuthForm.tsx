@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useLocale, useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage, validationMessages } from "@/lib/auth-errors";
 import { loginSchema, registerSchema, usernameSchema } from "@/lib/validation/auth";
@@ -18,6 +19,9 @@ export function AuthForm() {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const supabase = createClient();
+  const t = useTranslations("Auth");
+  const tCommon = useTranslations("Common");
+  const locale = useLocale() as "uk" | "en";
 
   const [mode, setMode] = useState<Mode>("login");
   const [submitting, setSubmitting] = useState(false);
@@ -71,12 +75,12 @@ export function AuthForm() {
     const parsed = registerSchema.safeParse({ username, email, password });
     if (!parsed.success) {
       const issues = parsed.error.flatten().fieldErrors;
-      if (issues.username) errors.username = validationMessages.usernameFormat.uk;
-      if (issues.email) errors.email = validationMessages.emailRequired.uk;
-      if (issues.password) errors.password = validationMessages.passwordTooShort.uk;
+      if (issues.username) errors.username = validationMessages.usernameFormat[locale];
+      if (issues.email) errors.email = validationMessages.emailRequired[locale];
+      if (issues.password) errors.password = validationMessages.passwordTooShort[locale];
     }
-    if (usernameStatus === "taken") errors.username = validationMessages.usernameTaken.uk;
-    if (password !== confirmPassword) errors.confirmPassword = validationMessages.passwordsDontMatch.uk;
+    if (usernameStatus === "taken") errors.username = validationMessages.usernameTaken[locale];
+    if (password !== confirmPassword) errors.confirmPassword = validationMessages.passwordsDontMatch[locale];
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -92,7 +96,7 @@ export function AuthForm() {
     setSubmitting(false);
 
     if (error) {
-      setFormError(authErrorMessage(error));
+      setFormError(authErrorMessage(error, locale));
       return;
     }
 
@@ -105,9 +109,7 @@ export function AuthForm() {
     } else {
       // Only reachable if email confirmation gets turned on later — the
       // flow degrades gracefully instead of assuming an immediate session.
-      setInfoMessage(
-        "Перевірте свою електронну пошту, щоб підтвердити реєстрацію.",
-      );
+      setInfoMessage(t("confirmEmailNotice"));
     }
   }
 
@@ -128,7 +130,7 @@ export function AuthForm() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.tokenHash) {
         setSubmitting(false);
-        setFormError("Гостьовий доступ тимчасово недоступний.");
+        setFormError(t("guestUnavailable"));
         return;
       }
 
@@ -143,7 +145,7 @@ export function AuthForm() {
       setSubmitting(false);
 
       if (error) {
-        setFormError(authErrorMessage(error));
+        setFormError(authErrorMessage(error, locale));
         return;
       }
 
@@ -151,7 +153,7 @@ export function AuthForm() {
       router.refresh();
     } catch {
       setSubmitting(false);
-      setFormError("Немає з’єднання з сервером. Перевірте інтернет-з’єднання.");
+      setFormError(tCommon("networkError"));
     }
   }
 
@@ -162,7 +164,7 @@ export function AuthForm() {
 
     const parsed = loginSchema.safeParse({ email, password });
     if (!parsed.success) {
-      setFieldErrors({ email: validationMessages.emailRequired.uk });
+      setFieldErrors({ email: validationMessages.emailRequired[locale] });
       return;
     }
 
@@ -171,7 +173,7 @@ export function AuthForm() {
     setSubmitting(false);
 
     if (error) {
-      setFormError(authErrorMessage(error));
+      setFormError(authErrorMessage(error, locale));
       return;
     }
 
@@ -195,7 +197,7 @@ export function AuthForm() {
             mode === "login" ? "bg-white text-black" : "text-white/60"
           }`}
         >
-          Увійти
+          {t("loginTab")}
         </button>
         <button
           type="button"
@@ -204,7 +206,7 @@ export function AuthForm() {
             mode === "register" ? "bg-white text-black" : "text-white/60"
           }`}
         >
-          Реєстрація
+          {t("registerTab")}
         </button>
       </div>
 
@@ -221,7 +223,7 @@ export function AuthForm() {
             noValidate
           >
             <div>
-              <label className={labelClass} htmlFor="login-email">Email</label>
+              <label className={labelClass} htmlFor="login-email">{t("emailLabel")}</label>
               <input
                 id="login-email"
                 type="email"
@@ -233,7 +235,7 @@ export function AuthForm() {
               {fieldErrors.email && <p className="mt-1 text-xs text-red-300">{fieldErrors.email}</p>}
             </div>
             <div>
-              <label className={labelClass} htmlFor="login-password">Пароль</label>
+              <label className={labelClass} htmlFor="login-password">{t("passwordLabel")}</label>
               <input
                 id="login-password"
                 type="password"
@@ -249,7 +251,7 @@ export function AuthForm() {
               disabled={submitting}
               className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black transition disabled:opacity-50"
             >
-              {submitting ? "Зачекайте…" : "Увійти"}
+              {submitting ? t("submitting") : t("loginCta")}
             </button>
           </motion.form>
         ) : (
@@ -264,7 +266,7 @@ export function AuthForm() {
             noValidate
           >
             <div>
-              <label className={labelClass} htmlFor="reg-username">Ім’я користувача</label>
+              <label className={labelClass} htmlFor="reg-username">{t("usernameLabel")}</label>
               <input
                 id="reg-username"
                 type="text"
@@ -273,17 +275,17 @@ export function AuthForm() {
                 value={username}
                 onChange={(e) => onUsernameChange(e.target.value)}
               />
-              {usernameStatus === "checking" && <p className="mt-1 text-xs text-white/40">Перевірка…</p>}
+              {usernameStatus === "checking" && <p className="mt-1 text-xs text-white/40">{t("checkingUsername")}</p>}
               {usernameStatus === "taken" && (
-                <p className="mt-1 text-xs text-red-300">{validationMessages.usernameTaken.uk}</p>
+                <p className="mt-1 text-xs text-red-300">{validationMessages.usernameTaken[locale]}</p>
               )}
               {usernameStatus === "available" && (
-                <p className="mt-1 text-xs text-emerald-300">Доступне</p>
+                <p className="mt-1 text-xs text-emerald-300">{t("usernameAvailable")}</p>
               )}
               {fieldErrors.username && <p className="mt-1 text-xs text-red-300">{fieldErrors.username}</p>}
             </div>
             <div>
-              <label className={labelClass} htmlFor="reg-email">Email</label>
+              <label className={labelClass} htmlFor="reg-email">{t("emailLabel")}</label>
               <input
                 id="reg-email"
                 type="email"
@@ -295,7 +297,7 @@ export function AuthForm() {
               {fieldErrors.email && <p className="mt-1 text-xs text-red-300">{fieldErrors.email}</p>}
             </div>
             <div>
-              <label className={labelClass} htmlFor="reg-password">Пароль</label>
+              <label className={labelClass} htmlFor="reg-password">{t("passwordLabel")}</label>
               <input
                 id="reg-password"
                 type="password"
@@ -307,7 +309,7 @@ export function AuthForm() {
               {fieldErrors.password && <p className="mt-1 text-xs text-red-300">{fieldErrors.password}</p>}
             </div>
             <div>
-              <label className={labelClass} htmlFor="reg-confirm">Підтвердження пароля</label>
+              <label className={labelClass} htmlFor="reg-confirm">{t("confirmPasswordLabel")}</label>
               <input
                 id="reg-confirm"
                 type="password"
@@ -327,7 +329,7 @@ export function AuthForm() {
               disabled={submitting}
               className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black transition disabled:opacity-50"
             >
-              {submitting ? "Зачекайте…" : "Створити акаунт"}
+              {submitting ? t("submitting") : t("registerCta")}
             </button>
           </motion.form>
         )}
@@ -339,7 +341,7 @@ export function AuthForm() {
         disabled={submitting}
         className="mt-5 w-full text-center text-[13px] font-medium text-white/50 underline decoration-white/30 underline-offset-4 transition hover:text-white/80 disabled:opacity-50"
       >
-        Зайти як гість
+        {t("guestCta")}
       </button>
     </motion.div>
   );

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const POLL_INTERVAL_MS = 2500;
 const MAX_POLLS = 48; // ~2 minutes
@@ -29,6 +30,7 @@ function cameFromCheckout(): boolean {
 
 export function PaymentStatusPoller({ orderReference }: { orderReference: string }) {
   const router = useRouter();
+  const t = useTranslations("ReserveSummary");
   const [active, setActive] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const pollCount = useRef(0);
@@ -95,7 +97,7 @@ export function PaymentStatusPoller({ orderReference }: { orderReference: string
   if (gaveUp) {
     return (
       <p className="mt-3 text-center text-sm text-neutral-500">
-        Підтвердження оплати займає більше часу, ніж очікувалось. Оновіть сторінку через хвилину.
+        {t("confirmSlow")}
       </p>
     );
   }
@@ -103,7 +105,7 @@ export function PaymentStatusPoller({ orderReference }: { orderReference: string
   return (
     <p className="mt-3 flex items-center justify-center gap-2 text-center text-sm text-neutral-500">
       <span className="h-2 w-2 animate-pulse rounded-full bg-neutral-400" />
-      Підтверджуємо оплату…
+      {t("confirmingPayment")}
     </p>
   );
 }

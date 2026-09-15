@@ -3,11 +3,14 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ALLOWED_AVATAR_MIME_TYPES, MAX_AVATAR_BYTES } from "@/lib/validation/avatar";
 import { uploadErrorMessages } from "@/lib/upload-errors";
 
 export function AvatarOnboardingForm() {
   const router = useRouter();
+  const t = useTranslations("Onboarding");
+  const locale = useLocale() as "uk" | "en";
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -24,11 +27,11 @@ export function AvatarOnboardingForm() {
     if (!selected) return;
 
     if (!ALLOWED_AVATAR_MIME_TYPES.includes(selected.type)) {
-      setError(uploadErrorMessages.unsupportedType.uk);
+      setError(uploadErrorMessages.unsupportedType[locale]);
       return;
     }
     if (selected.size > MAX_AVATAR_BYTES) {
-      setError(uploadErrorMessages.tooLarge.uk);
+      setError(uploadErrorMessages.tooLarge[locale]);
       return;
     }
 
@@ -60,7 +63,7 @@ export function AvatarOnboardingForm() {
               : body.error === "unauthorized"
                 ? "unauthorized"
                 : "uploadFailed";
-        setError(uploadErrorMessages[key].uk);
+        setError(uploadErrorMessages[key][locale]);
         setUploading(false);
         return;
       }
@@ -68,7 +71,7 @@ export function AvatarOnboardingForm() {
       router.push("/home");
       router.refresh();
     } catch {
-      setError(uploadErrorMessages.network.uk);
+      setError(uploadErrorMessages.network[locale]);
       setUploading(false);
     }
   }
@@ -82,10 +85,8 @@ export function AvatarOnboardingForm() {
 
   return (
     <div className="w-full max-w-sm rounded-3xl border border-white/15 bg-black/40 p-6 text-center shadow-2xl backdrop-blur-xl">
-      <h1 className="mb-1 text-lg font-semibold text-white">Ваше фото профілю</h1>
-      <p className="mb-6 text-sm text-white/60">
-        Додайте фото або пропустіть цей крок — ми використаємо стандартний аватар.
-      </p>
+      <h1 className="mb-1 text-lg font-semibold text-white">{t("title")}</h1>
+      <p className="mb-6 text-sm text-white/60">{t("subtitle")}</p>
 
       <button
         type="button"
@@ -94,7 +95,7 @@ export function AvatarOnboardingForm() {
       >
         <Image src={displaySrc} alt="" fill sizes="128px" className="object-cover" />
         <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-medium text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
-          Обрати фото
+          {t("choosePhoto")}
         </span>
       </button>
 
@@ -115,7 +116,7 @@ export function AvatarOnboardingForm() {
           disabled={uploading}
           className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black transition disabled:opacity-50"
         >
-          {uploading ? "Завантаження…" : file ? "Зберегти фото" : "Обрати з галереї"}
+          {uploading ? t("uploading") : file ? t("savePhoto") : t("chooseFromGallery")}
         </button>
         <button
           type="button"
@@ -123,7 +124,7 @@ export function AvatarOnboardingForm() {
           disabled={uploading}
           className="w-full rounded-xl border border-white/15 bg-transparent py-3 text-sm font-medium text-white/70 transition hover:bg-white/5 disabled:opacity-50"
         >
-          Пропустити
+          {t("skip")}
         </button>
       </div>
     </div>

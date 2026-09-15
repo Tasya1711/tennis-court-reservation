@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { CancelReservationButton } from "@/components/account/CancelReservationButton";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { DesktopSplitScreen } from "@/components/layout/DesktopSplitScreen";
@@ -16,22 +17,6 @@ type Reservation = {
   status: string;
   paymentStatus: string;
   startAtIso: string;
-};
-
-// Same Ukrainian status copy as /reserve/summary, for a consistent vocabulary
-// across the app.
-const STATUS_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: "Очікує оплати",
-  CONFIRMED: "Підтверджено",
-  CANCELLED: "Скасовано",
-  EXPIRED: "Термін дії сплив",
-};
-
-const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  UNPAID: "Не оплачено",
-  PAID: "Оплачено",
-  REFUNDED: "Повернено",
-  FAILED: "Не вдалося",
 };
 
 // Same reasoning as app/reserve/summary/page.tsx's requestTime(): a
@@ -55,14 +40,16 @@ export function AccountScreen({
   email: string;
   reservations: Reservation[];
 }) {
+  const t = useTranslations("Account");
+  const tCommon = useTranslations("Common");
   const now = requestTime();
 
   const reservationsList =
     reservations.length === 0 ? (
       <div className="mt-4 rounded-2xl bg-black/[0.04] p-5 text-center">
-        <p className="text-sm text-neutral-600">У вас ще немає бронювань.</p>
+        <p className="text-sm text-neutral-600">{t("noReservations")}</p>
         <Link href="/reserve" className="mt-3 inline-block text-sm font-medium text-neutral-900 underline">
-          Забронювати корт
+          {t("bookCourt")}
         </Link>
       </div>
     ) : (
@@ -89,7 +76,7 @@ export function AccountScreen({
               <LogoutButton variant="icon" />
               <Link
                 href="/home"
-                aria-label="На головну"
+                aria-label={tCommon("home")}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/25 backdrop-blur-sm"
               >
                 <HomeIcon />
@@ -109,10 +96,10 @@ export function AccountScreen({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-lg font-medium text-white">{username || "Мій профіль"}</h1>
+                <h1 className="truncate text-lg font-medium text-white">{username || t("defaultProfileName")}</h1>
                 <Link
                   href="/account/edit"
-                  aria-label="Редагувати профіль"
+                  aria-label={t("editAria")}
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm"
                 >
                   <EditIcon />
@@ -124,14 +111,14 @@ export function AccountScreen({
         </div>
 
         <div className="relative z-10 -mt-6 rounded-t-[2rem] bg-[#f4f1ec] px-4 pb-10 pt-6 text-neutral-900">
-          <p className="text-[15px] font-medium">Мої бронювання</p>
+          <p className="text-[15px] font-medium">{t("myReservations")}</p>
           {reservationsList}
 
           <Link
             href="/home"
             className="mt-8 block w-full rounded-full bg-neutral-900 py-4 text-center text-[15px] font-semibold text-white"
           >
-            На головну
+            {tCommon("home")}
           </Link>
         </div>
       </main>
@@ -155,10 +142,10 @@ export function AccountScreen({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-lg font-medium">{username || "Мій профіль"}</h1>
+                    <h1 className="text-lg font-medium">{username || t("defaultProfileName")}</h1>
                     <Link
                       href="/account/edit"
-                      aria-label="Редагувати профіль"
+                      aria-label={t("editAria")}
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/[0.06] text-neutral-600"
                     >
                       <EditIcon />
@@ -170,7 +157,7 @@ export function AccountScreen({
               <LogoutButton variant="icon" />
             </div>
 
-            <p className="mt-8 text-[15px] font-medium">Мої бронювання</p>
+            <p className="mt-8 text-[15px] font-medium">{t("myReservations")}</p>
             {reservationsList}
           </div>
         </div>
@@ -180,7 +167,15 @@ export function AccountScreen({
 }
 
 function ReservationCard({ reservation, now }: { reservation: Reservation; now: number }) {
+  const t = useTranslations("Account");
   const isCancellable = reservation.status === "CONFIRMED" && new Date(reservation.startAtIso).getTime() > now;
+
+  const paymentStatusLabel: Record<string, string> = {
+    UNPAID: t("paymentUnpaid"),
+    PAID: t("paymentPaid"),
+    REFUNDED: t("paymentRefunded"),
+    FAILED: t("paymentFailed"),
+  };
 
   return (
     <div className="rounded-2xl bg-black/[0.04] p-5">
@@ -193,10 +188,10 @@ function ReservationCard({ reservation, now }: { reservation: Reservation; now: 
       </div>
 
       <div className="mt-4 space-y-2">
-        <Row label="Дата" value={reservation.date} />
-        <Row label="Час" value={`${reservation.startTime} – ${reservation.endTime}`} />
-        <Row label="Вартість" value={`${reservation.amountUah} ₴`} />
-        <Row label="Оплата" value={PAYMENT_STATUS_LABEL[reservation.paymentStatus] ?? reservation.paymentStatus} />
+        <Row label={t("date")} value={reservation.date} />
+        <Row label={t("time")} value={`${reservation.startTime} – ${reservation.endTime}`} />
+        <Row label={t("cost")} value={`${reservation.amountUah} ₴`} />
+        <Row label={t("payment")} value={paymentStatusLabel[reservation.paymentStatus] ?? reservation.paymentStatus} />
       </div>
 
       {isCancellable && <CancelReservationButton reservationId={reservation.id} />}
@@ -205,14 +200,23 @@ function ReservationCard({ reservation, now }: { reservation: Reservation; now: 
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useTranslations("Account");
   const isPositive = status === "CONFIRMED";
+
+  const statusLabel: Record<string, string> = {
+    PENDING_PAYMENT: t("statusPending"),
+    CONFIRMED: t("statusConfirmed"),
+    CANCELLED: t("statusCancelled"),
+    EXPIRED: t("statusExpired"),
+  };
+
   return (
     <span
       className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${
         isPositive ? "bg-emerald-600/10 text-emerald-700" : "bg-black/[0.06] text-neutral-600"
       }`}
     >
-      {STATUS_LABEL[status] ?? status}
+      {statusLabel[status] ?? status}
     </span>
   );
 }

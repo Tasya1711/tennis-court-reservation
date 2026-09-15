@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { RevealOnMount } from "@/components/home/RevealOnMount";
 import { DesktopSplitScreen } from "@/components/layout/DesktopSplitScreen";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 type CourtType = "INDOOR" | "OUTDOOR";
 type Court = { id: string; name: string; type: CourtType; priceUah: number };
@@ -34,6 +36,8 @@ export function HomeScreen({
   venue: Venue;
   courts: Court[];
 }) {
+  const t = useTranslations("Home");
+  const tCommon = useTranslations("Common");
   const indoor = courts.filter((c) => c.type === "INDOOR").map((c) => shortLabel(c.name));
   const outdoor = courts.filter((c) => c.type === "OUTDOOR").map((c) => shortLabel(c.name));
 
@@ -88,10 +92,10 @@ export function HomeScreen({
         </span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center">
-        <p className="text-sm font-medium leading-snug text-white">Забронюйте урок з тренером</p>
-        <p className="text-xs text-white/50">Працюйте з найкращими тренерами</p>
+        <p className="text-sm font-medium leading-snug text-white">{t("coachTitle")}</p>
+        <p className="text-xs text-white/50">{t("coachSubtitle")}</p>
         <span className="mt-2 self-start rounded-full bg-lime-300 px-3 py-1 text-[11px] font-semibold text-black">
-          Забронювати
+          {t("coachCta")}
         </span>
       </div>
     </div>
@@ -114,10 +118,10 @@ export function HomeScreen({
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-black/70" />
 
-          <RevealOnMount y={-8} className="relative z-10">
+          <RevealOnMount y={-8} className="relative z-10 flex items-center justify-between">
             <Link
               href="/account"
-              aria-label="Мій профіль"
+              aria-label={tCommon("profile")}
               className="relative block h-11 w-11 overflow-hidden rounded-full border-2 border-white/80 shadow-lg"
             >
               <Image
@@ -128,6 +132,7 @@ export function HomeScreen({
                 className="object-cover"
               />
             </Link>
+            <LanguageSwitcher />
           </RevealOnMount>
 
           <RevealOnMount y={10} delay={0.1} className="relative z-10">
@@ -138,7 +143,7 @@ export function HomeScreen({
               <p className="text-[15px] leading-tight text-white/90">{venue.address}</p>
             )}
             <span className="mt-2 inline-block rounded-full border border-lime-300/60 px-2.5 py-0.5 text-[11px] font-medium text-lime-300">
-              Top 10
+              {t("topBadge")}
             </span>
           </RevealOnMount>
         </div>
@@ -151,11 +156,11 @@ export function HomeScreen({
           className="relative z-10 -mt-6 rounded-t-[2rem] bg-neutral-950 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6"
         >
           <div className="flex items-baseline justify-between">
-            <p className="text-[15px] font-medium text-white">Оберіть корт</p>
+            <p className="text-[15px] font-medium text-white">{t("chooseCourt")}</p>
             <p className="text-[11px] text-white/45">
-              {indoor.length > 0 && <span>{indoor.join(", ")} криті</span>}
+              {indoor.length > 0 && <span>{indoor.join(", ")} {t("indoor")}</span>}
               {indoor.length > 0 && outdoor.length > 0 && <span> · </span>}
-              {outdoor.length > 0 && <span>{outdoor.join(", ")} відкриті</span>}
+              {outdoor.length > 0 && <span>{outdoor.join(", ")} {t("outdoor")}</span>}
             </p>
           </div>
 
@@ -175,11 +180,11 @@ export function HomeScreen({
             href="/reserve"
             className="mt-5 block w-full rounded-full bg-white py-4 text-center text-[15px] font-semibold text-black transition active:scale-[0.99]"
           >
-            Зробити бронювання
+            {t("bookCta")}
           </Link>
 
           <p className="mt-3 text-center text-[11px] leading-snug text-white/40">
-            Остаточна вартість і доступність підтверджуються на сторінці бронювання.
+            {t("disclaimer")}
           </p>
         </RevealOnMount>
       </main>
@@ -192,11 +197,11 @@ export function HomeScreen({
             {venue?.address && <p className="text-sm text-white/60">{venue.address}</p>}
 
             <div className="mt-6 flex items-baseline justify-between">
-              <p className="text-[15px] font-medium text-white">Оберіть корт</p>
+              <p className="text-[15px] font-medium text-white">{t("chooseCourt")}</p>
               <p className="text-[11px] text-white/45">
-                {indoor.length > 0 && <span>{indoor.join(", ")} криті</span>}
+                {indoor.length > 0 && <span>{indoor.join(", ")} {t("indoor")}</span>}
                 {indoor.length > 0 && outdoor.length > 0 && <span> · </span>}
-                {outdoor.length > 0 && <span>{outdoor.join(", ")} відкриті</span>}
+                {outdoor.length > 0 && <span>{outdoor.join(", ")} {t("outdoor")}</span>}
               </p>
             </div>
 
@@ -208,10 +213,10 @@ export function HomeScreen({
               href="/reserve"
               className="mt-6 block w-full max-w-xs rounded-full bg-white py-4 text-center text-[15px] font-semibold text-black transition hover:opacity-90"
             >
-              Зробити бронювання
+              {t("bookCta")}
             </Link>
             <p className="mt-3 max-w-xs text-[11px] leading-snug text-white/40">
-              Остаточна вартість і доступність підтверджуються на сторінці бронювання.
+              {t("disclaimer")}
             </p>
           </div>
         </div>

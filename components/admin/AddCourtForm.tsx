@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { type CourtType, inputClass, labelClass } from "@/components/admin/shared";
 
 export function AddCourtForm() {
   const router = useRouter();
+  const t = useTranslations("Admin");
+  const tCommon = useTranslations("Common");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState<CourtType>("OUTDOOR");
@@ -24,11 +27,7 @@ export function AddCourtForm() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(
-          body.error === "duplicate_name"
-            ? "Корт з такою назвою вже існує."
-            : "Не вдалося створити корт. Перевірте введені дані.",
-        );
+        setError(body.error === "duplicate_name" ? t("duplicateNameError") : t("createFailedError"));
         setSubmitting(false);
         return;
       }
@@ -37,7 +36,7 @@ export function AddCourtForm() {
       setOpen(false);
       router.refresh();
     } catch {
-      setError("Немає з’єднання з сервером.");
+      setError(tCommon("networkError"));
     } finally {
       setSubmitting(false);
     }
@@ -50,29 +49,29 @@ export function AddCourtForm() {
         onClick={() => setOpen(true)}
         className="w-full rounded-full bg-neutral-900 py-3.5 text-center text-[15px] font-semibold text-white transition active:scale-[0.99]"
       >
-        Додати корт
+        {t("addCourt")}
       </button>
     );
   }
 
   return (
     <div className="rounded-2xl bg-black/[0.04] p-5">
-      <p className="mb-3 text-sm font-medium">Новий корт</p>
+      <p className="mb-3 text-sm font-medium">{t("newCourt")}</p>
       {error && <p className="mb-3 text-xs text-red-600">{error}</p>}
       <div className="space-y-3">
         <div>
-          <label className={labelClass}>Назва</label>
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Наприклад, D1" />
+          <label className={labelClass}>{t("nameLabel")}</label>
+          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} />
         </div>
         <div>
-          <label className={labelClass}>Тип</label>
+          <label className={labelClass}>{t("typeLabel")}</label>
           <select className={inputClass} value={type} onChange={(e) => setType(e.target.value as CourtType)}>
-            <option value="OUTDOOR">Відкритий</option>
-            <option value="INDOOR">Критий</option>
+            <option value="OUTDOOR">{t("outdoor")}</option>
+            <option value="INDOOR">{t("indoor")}</option>
           </select>
         </div>
         <div>
-          <label className={labelClass}>Ціна (₴)</label>
+          <label className={labelClass}>{t("priceLabel")}</label>
           <input
             className={inputClass}
             type="number"
@@ -89,7 +88,7 @@ export function AddCourtForm() {
           disabled={submitting || !name.trim() || !priceUah}
           className="flex-1 rounded-full bg-neutral-900 py-2.5 text-center text-[13px] font-semibold text-white transition disabled:opacity-50"
         >
-          {submitting ? "Створюємо…" : "Створити"}
+          {submitting ? t("creating") : t("create")}
         </button>
         <button
           type="button"
@@ -97,7 +96,7 @@ export function AddCourtForm() {
           disabled={submitting}
           className="flex-1 rounded-full bg-black/[0.06] py-2.5 text-center text-[13px] font-medium text-neutral-700 transition disabled:opacity-50"
         >
-          Скасувати
+          {t("cancel")}
         </button>
       </div>
     </div>

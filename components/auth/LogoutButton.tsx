@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 export function LogoutButton({ variant = "text" }: { variant?: "text" | "icon" }) {
   const router = useRouter();
+  const t = useTranslations("Account");
   const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
@@ -22,7 +24,7 @@ export function LogoutButton({ variant = "text" }: { variant?: "text" | "icon" }
         type="button"
         onClick={handleLogout}
         disabled={loading}
-        aria-label="Вийти"
+        aria-label={t("logoutAria")}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm transition hover:bg-black/50 disabled:opacity-50"
       >
         <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.75} stroke="currentColor" className="h-5 w-5">
@@ -43,7 +45,7 @@ export function LogoutButton({ variant = "text" }: { variant?: "text" | "icon" }
       disabled={loading}
       className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
     >
-      {loading ? "Виходимо…" : "Вийти"}
+      {loading ? t("loggingOut") : t("logout")}
     </button>
   );
 }
