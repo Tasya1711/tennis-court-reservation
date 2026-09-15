@@ -111,6 +111,50 @@ export function AuthForm() {
     }
   }
 
+  // Guest access: a real (but marked `is_anonymous: true`) Supabase Auth
+  // session — the same auth system as everyone else, not a second one. The
+  // username in metadata is required: the on_auth_user_created trigger
+  // falls back to deriving one from `email` (COALESCE(...,
+  // split_part(NEW.email, '@', 1) || ...)), and an anonymous user has no
+  // email, so without this the insert would violate the NOT NULL
+  // constraint on profiles.username and the whole sign-in would fail.
+  async function handleGuest() {
+    setFormError(null);
+    setInfoMessage(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/auth/guest", { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.tokenHash) {
+        setSubmitting(false);
+        setFormError("Гостьовий доступ тимчасово недоступний.");
+        return;
+      }
+
+      // The server created the guest user and handed back a one-time
+      // token; verifying it here is what actually establishes the real
+      // Supabase session (cookies) in this browser — the same mechanism
+      // as any other sign-in, just via a token instead of a password.
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: body.tokenHash,
+        type: "email",
+      });
+      setSubmitting(false);
+
+      if (error) {
+        setFormError(authErrorMessage(error));
+        return;
+      }
+
+      router.push("/home");
+      router.refresh();
+    } catch {
+      setSubmitting(false);
+      setFormError("Немає з’єднання з сервером. Перевірте інтернет-з’єднання.");
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -142,7 +186,7 @@ export function AuthForm() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reduceMotion ? 0.15 : 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full max-w-sm rounded-3xl border border-white/15 bg-black/40 p-6 shadow-2xl backdrop-blur-xl">
+      className="mx-auto w-full max-w-sm rounded-3xl border border-white/15 bg-black/40 p-6 shadow-2xl backdrop-blur-xl">
       <div className="mb-6 flex rounded-full bg-white/5 p-1">
         <button
           type="button"
@@ -288,6 +332,15 @@ export function AuthForm() {
           </motion.form>
         )}
       </AnimatePresence>
+
+      <button
+        type="button"
+        onClick={handleGuest}
+        disabled={submitting}
+        className="mt-5 w-full text-center text-[13px] font-medium text-white/50 underline decoration-white/30 underline-offset-4 transition hover:text-white/80 disabled:opacity-50"
+      >
+        Зайти як гість
+      </button>
     </motion.div>
   );
 }

@@ -11,6 +11,7 @@
     "db:deploy": "dotenv -e .env.local -- prisma migrate deploy",
     "db:seed": "dotenv -e .env.local -- tsx prisma/seed.ts",
     "db:studio": "dotenv -e .env.local -- prisma studio",
+    "stripe:redeliver": "dotenv -e .env.local -- node scripts/redeliver-stripe-webhook.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {

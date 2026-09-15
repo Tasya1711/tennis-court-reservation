@@ -3,6 +3,27 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/payments/stripe";
 
+// NEXT_PUBLIC_SITE_URL alone breaks the redirect back from Stripe whenever
+// the page wasn't loaded from that exact origin — e.g. testing from a phone
+// via the dev machine's LAN IP, where the env var still says "localhost"
+// but the phone can't resolve "localhost" back to that machine. The
+// request's own Origin/Host reflects whatever origin the browser is
+// actually on, so it's preferred; NEXT_PUBLIC_SITE_URL remains the
+// fallback for contexts with no request origin to read.
+function resolveSiteUrl(request: Request): string | null {
+  const origin = request.headers.get("origin");
+  if (origin) return origin;
+
+  const host = request.headers.get("host");
+  if (host) {
+    const isLocal = host.startsWith("localhost") || /^\d+\.\d+\.\d+\.\d+(:\d+)?$/.test(host);
+    const proto = request.headers.get("x-forwarded-proto") ?? (isLocal ? "http" : "https");
+    return `${proto}://${host}`;
+  }
+
+  return process.env.NEXT_PUBLIC_SITE_URL ?? null;
+}
+
 // Mirrors /api/payments/create's validation exactly (same reservation
 // architecture, different provider underneath) — auth, ownership, status,
 // and hold-expiry checks are unchanged from the WayForPay route.
@@ -34,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "hold_expired" }, { status: 410 });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const siteUrl = resolveSiteUrl(request);
   if (!process.env.STRIPE_SECRET_KEY || !siteUrl) {
     console.error("payments/stripe/checkout: missing Stripe/site env configuration");
     return NextResponse.json({ error: "payment_not_configured" }, { status: 503 });
@@ -46,6 +67,14 @@ export async function POST(request: Request) {
     const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      // This is a digital court reservation — nothing ships, and every
+      // customer pays in UAH already, so there's no currency to localize.
+      // The Dashboard's Adaptive Pricing default was silently inheriting
+      // as {enabled: true} on every session (confirmed via the Stripe API)
+      // even though we never set it — its presence is the only
+      // unexplained, non-default field found on Apple Pay's stuck
+      // "Update shipping…" sessions, so it's turned off explicitly here.
+      adaptive_pricing: { enabled: false },
       line_items: [
         {
           quantity: 1,

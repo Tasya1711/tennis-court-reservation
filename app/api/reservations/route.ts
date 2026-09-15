@@ -18,6 +18,16 @@ export async function POST(request: Request) {
   }
   const userId = claimsData.claims.sub;
 
+  // Guest sessions (see app/api/auth/guest/route.ts) are real, valid
+  // sessions — they'd otherwise pass the check above — but a guest must
+  // not be able to create a reservation. Enforced here, not just by hiding
+  // the booking button client-side. profiles.role = 'GUEST' is set by the
+  // on_auth_user_created trigger for guest sign-ins only.
+  const profile = await prisma.profile.findUnique({ where: { id: userId }, select: { role: true } });
+  if (profile?.role === "GUEST") {
+    return NextResponse.json({ error: "guest_not_allowed" }, { status: 403 });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = createReservationSchema.safeParse(body);
   if (!parsed.success) {

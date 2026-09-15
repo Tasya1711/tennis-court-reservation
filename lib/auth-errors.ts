@@ -51,6 +51,10 @@ const MESSAGES: Record<string, Bilingual> = {
     uk: "Реєстрація тимчасово недоступна.",
     en: "Registration is temporarily unavailable.",
   },
+  anonymous_provider_disabled: {
+    uk: "Гостьовий доступ тимчасово недоступний.",
+    en: "Guest access is temporarily unavailable.",
+  },
 };
 
 const GENERIC: Bilingual = {

@@ -31,6 +31,15 @@ model Profile {
 enum Role {
   CUSTOMER
   ADMIN
+  // Real Supabase-authenticated session (same auth system, same
+  // getClaims()/cookies as everyone else), just marked so /account,
+  // /admin/**, and reservation creation can reject it — added because
+  // this project's Supabase instance has "Anonymous sign-ins" disabled at
+  // the dashboard level (confirmed empirically: signInAnonymously()
+  // returns `anonymous_provider_disabled`), so the guest flow instead
+  // creates a real user via the admin API's generateLink()/verifyOtp()
+  // path, which isn't gated by that toggle. See app/api/auth/guest/route.ts.
+  GUEST
 }
 
 model Court {
