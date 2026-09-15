@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ACTIVE_PAYMENT_PROVIDER, PAYMENT_CHECKOUT_ENDPOINTS } from "@/lib/payments/provider";
 
 export function PayButton({ reservationId, amountUah }: { reservationId: string; amountUah: number }) {
+  const t = useTranslations("ReserveSummary");
+  const tCommon = useTranslations("Common");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,17 +22,17 @@ export function PayButton({ reservationId, amountUah }: { reservationId: string;
       const body = await res.json().catch(() => ({}));
 
       if (res.status === 410) {
-        setError("Час бронювання сплив. Оберіть слот ще раз.");
+        setError(t("holdExpiredError"));
         return;
       }
       if (!res.ok || !body.paymentUrl) {
-        setError("Не вдалося створити платіж. Спробуйте ще раз.");
+        setError(t("paymentCreateFailed"));
         return;
       }
 
       window.location.href = body.paymentUrl;
     } catch {
-      setError("Немає з’єднання з сервером. Перевірте інтернет-з’єднання.");
+      setError(tCommon("networkError"));
       setLoading(false);
     }
   }
@@ -43,7 +46,7 @@ export function PayButton({ reservationId, amountUah }: { reservationId: string;
         disabled={loading}
         className="block w-full rounded-full bg-neutral-900 py-4 text-center text-[15px] font-semibold text-white transition disabled:opacity-50"
       >
-        {loading ? "Переходимо до оплати…" : `Сплатити ${amountUah} ₴`}
+        {loading ? t("payingRedirect") : t("payCta", { amount: amountUah })}
       </button>
     </div>
   );

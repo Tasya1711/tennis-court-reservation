@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { type Court, type CourtType, inputClass, labelClass, TYPE_LABEL } from "@/components/admin/shared";
+import { useTranslations } from "next-intl";
+import { type Court, type CourtType, inputClass, labelClass } from "@/components/admin/shared";
 
 export function CourtRow({ court }: { court: Court }) {
   const router = useRouter();
+  const t = useTranslations("Admin");
+  const tCommon = useTranslations("Common");
+  const TYPE_LABEL: Record<CourtType, string> = { INDOOR: t("indoor"), OUTDOOR: t("outdoor") };
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -27,16 +31,14 @@ export function CourtRow({ court }: { court: Court }) {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(
-          body.error === "duplicate_name" ? "Корт з такою назвою вже існує." : "Не вдалося зберегти зміни.",
-        );
+        setError(body.error === "duplicate_name" ? t("duplicateNameError") : t("saveFailedError"));
         setBusy(false);
         return false;
       }
       router.refresh();
       return true;
     } catch {
-      setError("Немає з’єднання з сервером.");
+      setError(tCommon("networkError"));
       return false;
     } finally {
       // router.refresh() re-fetches server data but doesn't remount this
@@ -68,18 +70,14 @@ export function CourtRow({ court }: { court: Court }) {
       const res = await fetch(`/api/admin/courts/${court.id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(
-          body.error === "has_reservations"
-            ? "Цей корт має історію бронювань — видалення неможливе. Вимкніть його замість цього."
-            : "Не вдалося видалити корт.",
-        );
+        setError(body.error === "has_reservations" ? t("hasReservationsError") : t("deleteFailedError"));
         setBusy(false);
         setConfirmingDelete(false);
         return;
       }
       router.refresh();
     } catch {
-      setError("Немає з’єднання з сервером.");
+      setError(tCommon("networkError"));
       setBusy(false);
       setConfirmingDelete(false);
     }
@@ -91,22 +89,22 @@ export function CourtRow({ court }: { court: Court }) {
         {error && <p className="mb-3 text-xs text-red-600">{error}</p>}
         <div className="space-y-3">
           <div>
-            <label className={labelClass}>Назва</label>
+            <label className={labelClass}>{t("nameLabel")}</label>
             <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Тип</label>
+            <label className={labelClass}>{t("typeLabel")}</label>
             <select className={inputClass} value={type} onChange={(e) => setType(e.target.value as CourtType)}>
-              <option value="OUTDOOR">Відкритий</option>
-              <option value="INDOOR">Критий</option>
+              <option value="OUTDOOR">{t("outdoor")}</option>
+              <option value="INDOOR">{t("indoor")}</option>
             </select>
           </div>
           <div>
-            <label className={labelClass}>Ціна (₴)</label>
+            <label className={labelClass}>{t("priceLabel")}</label>
             <input className={inputClass} type="number" min={1} value={priceUah} onChange={(e) => setPriceUah(e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Порядок відображення</label>
+            <label className={labelClass}>{t("sortOrderLabel")}</label>
             <input className={inputClass} type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
           </div>
         </div>
@@ -117,7 +115,7 @@ export function CourtRow({ court }: { court: Court }) {
             disabled={busy || !name.trim() || !priceUah}
             className="flex-1 rounded-full bg-neutral-900 py-2.5 text-center text-[13px] font-semibold text-white transition disabled:opacity-50"
           >
-            {busy ? "Зберігаємо…" : "Зберегти"}
+            {busy ? t("saving") : t("save")}
           </button>
           <button
             type="button"
@@ -132,7 +130,7 @@ export function CourtRow({ court }: { court: Court }) {
             disabled={busy}
             className="flex-1 rounded-full bg-black/[0.06] py-2.5 text-center text-[13px] font-medium text-neutral-700 transition disabled:opacity-50"
           >
-            Скасувати
+            {t("cancel")}
           </button>
         </div>
       </div>
@@ -145,7 +143,7 @@ export function CourtRow({ court }: { court: Court }) {
         <div>
           <p className="text-sm font-medium text-neutral-900">{court.name}</p>
           <p className="mt-0.5 text-xs text-neutral-500">
-            {TYPE_LABEL[court.type]} · {court.priceUah} ₴ · порядок {court.sortOrder}
+            {TYPE_LABEL[court.type]} · {court.priceUah} ₴ · {t("order")} {court.sortOrder}
           </p>
         </div>
         <span
@@ -153,7 +151,7 @@ export function CourtRow({ court }: { court: Court }) {
             court.isActive ? "bg-emerald-600/10 text-emerald-700" : "bg-black/[0.06] text-neutral-600"
           }`}
         >
-          {court.isActive ? "Активний" : "Вимкнено"}
+          {court.isActive ? t("active") : t("inactive")}
         </span>
       </div>
 
@@ -161,7 +159,7 @@ export function CourtRow({ court }: { court: Court }) {
 
       {confirmingDelete ? (
         <div className="mt-3">
-          <p className="mb-2 text-xs text-neutral-500">Видалити цей корт назавжди?</p>
+          <p className="mb-2 text-xs text-neutral-500">{t("confirmDelete")}</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -169,7 +167,7 @@ export function CourtRow({ court }: { court: Court }) {
               disabled={busy}
               className="flex-1 rounded-full bg-red-600 py-2.5 text-center text-[13px] font-semibold text-white transition disabled:opacity-50"
             >
-              {busy ? "Видаляємо…" : "Так, видалити"}
+              {busy ? t("deleting") : t("yesDelete")}
             </button>
             <button
               type="button"
@@ -177,7 +175,7 @@ export function CourtRow({ court }: { court: Court }) {
               disabled={busy}
               className="flex-1 rounded-full bg-black/[0.06] py-2.5 text-center text-[13px] font-medium text-neutral-700 transition disabled:opacity-50"
             >
-              Ні
+              {t("no")}
             </button>
           </div>
         </div>
@@ -189,7 +187,7 @@ export function CourtRow({ court }: { court: Court }) {
             disabled={busy}
             className="rounded-full bg-black/[0.06] px-4 py-2 text-[13px] font-medium text-neutral-700 transition disabled:opacity-50"
           >
-            Редагувати
+            {t("edit")}
           </button>
           <button
             type="button"
@@ -197,7 +195,7 @@ export function CourtRow({ court }: { court: Court }) {
             disabled={busy}
             className="rounded-full bg-black/[0.06] px-4 py-2 text-[13px] font-medium text-neutral-700 transition disabled:opacity-50"
           >
-            {court.isActive ? "Вимкнути" : "Увімкнути"}
+            {court.isActive ? t("deactivate") : t("activate")}
           </button>
           <button
             type="button"
@@ -205,7 +203,7 @@ export function CourtRow({ court }: { court: Court }) {
             disabled={busy}
             className="rounded-full bg-black/[0.06] px-4 py-2 text-[13px] font-medium text-red-600 transition disabled:opacity-50"
           >
-            Видалити
+            {t("delete")}
           </button>
         </div>
       )}

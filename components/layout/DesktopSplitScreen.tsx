@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 // Shared Tennis_desktop-referenced composition, used identically across
 // every page at >=768px (home, reserve, reserve/summary, account, auth):
@@ -20,6 +22,9 @@ export function DesktopSplitScreen({
   avatarUrl: string | null;
   children: ReactNode;
 }) {
+  const t = useTranslations("DesktopSplit");
+  const tCommon = useTranslations("Common");
+
   return (
     <div className="hidden min-h-dvh items-center justify-center bg-neutral-100 p-3 md:flex lg:p-5">
       {/* No background color here on purpose — each page's own left-side
@@ -51,19 +56,22 @@ export function DesktopSplitScreen({
 
           <div className="absolute inset-x-0 top-0 flex items-center justify-between p-6 lg:p-8">
             <span className="text-sm font-semibold tracking-[0.3em] text-white">TENNIS</span>
-            <Link
-              href="/account"
-              aria-label="Мій профіль"
-              className="relative block h-10 w-10 overflow-hidden rounded-full border-2 border-white/80 shadow-lg"
-            >
-              <Image
-                src={avatarUrl ?? "/images/user-photo.jpeg"}
-                alt=""
-                fill
-                sizes="40px"
-                className="object-cover"
-              />
-            </Link>
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher />
+              <Link
+                href="/account"
+                aria-label={tCommon("profile")}
+                className="relative block h-10 w-10 overflow-hidden rounded-full border-2 border-white/80 shadow-lg"
+              >
+                <Image
+                  src={avatarUrl ?? "/images/user-photo.jpeg"}
+                  alt=""
+                  fill
+                  sizes="40px"
+                  className="object-cover"
+                />
+              </Link>
+            </div>
           </div>
 
           {/* Short tennis-club caption in place of the reference's
@@ -72,12 +80,10 @@ export function DesktopSplitScreen({
               page-specific content. */}
           <div className="absolute inset-x-0 bottom-0 p-6 lg:p-8">
             <span className="inline-block rounded-full border border-lime-300/60 px-2.5 py-0.5 text-[11px] font-medium text-lime-300">
-              TENNIS CLUB
+              {t("badge")}
             </span>
-            <p className="mt-3 text-2xl font-medium text-white lg:text-3xl">Ваш корт чекає</p>
-            <p className="mt-2 max-w-xs text-sm text-white/80">
-              П’ять кортів, миттєве бронювання та безпечна оплата онлайн.
-            </p>
+            <p className="mt-3 text-2xl font-medium text-white lg:text-3xl">{t("heading")}</p>
+            <p className="mt-2 max-w-xs text-sm text-white/80">{t("caption")}</p>
           </div>
         </div>
       </div>

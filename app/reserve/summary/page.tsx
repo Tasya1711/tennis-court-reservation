@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { PayButton } from "@/components/payment/PayButton";
@@ -16,19 +17,21 @@ function requestTime(): number {
   return Date.now();
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: "Очікує оплати",
-  CONFIRMED: "Підтверджено",
-  CANCELLED: "Скасовано",
-  EXPIRED: "Термін дії сплив",
-};
-
 export default async function ReserveSummaryPage({
   searchParams,
 }: {
   searchParams: Promise<{ id?: string }>;
 }) {
   const { id } = await searchParams;
+  const t = await getTranslations("ReserveSummary");
+  const tCommon = await getTranslations("Common");
+
+  const STATUS_LABEL: Record<string, string> = {
+    PENDING_PAYMENT: t("statusPending"),
+    CONFIRMED: t("statusConfirmed"),
+    CANCELLED: t("statusCancelled"),
+    EXPIRED: t("statusExpired"),
+  };
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
@@ -62,17 +65,17 @@ export default async function ReserveSummaryPage({
   const details = (
     <>
       <div className="space-y-4 rounded-2xl bg-black/[0.04] p-5">
-        <Row label="Корт" value={reservation.court.name} />
-        <Row label="Дата" value={reservation.date.toISOString().slice(0, 10)} />
-        <Row label="Час" value={`${reservation.startTime} – ${reservation.endTime}`} />
-        <Row label="Вартість" value={`${reservation.amountUah} ₴`} />
-        <Row label="Статус" value={holdExpired ? STATUS_LABEL.EXPIRED : STATUS_LABEL[reservation.status] ?? reservation.status} />
+        <Row label={t("court")} value={reservation.court.name} />
+        <Row label={t("date")} value={reservation.date.toISOString().slice(0, 10)} />
+        <Row label={t("time")} value={`${reservation.startTime} – ${reservation.endTime}`} />
+        <Row label={t("cost")} value={`${reservation.amountUah} ₴`} />
+        <Row label={t("status")} value={holdExpired ? STATUS_LABEL.EXPIRED : STATUS_LABEL[reservation.status] ?? reservation.status} />
       </div>
 
       {isPayable && (
         <div className="mt-6">
           <p className="mb-3 text-center text-xs text-neutral-400">
-            Місце утримується {holdMinutesRemaining} хв.
+            {t("holdNotice", { minutes: holdMinutesRemaining })}
           </p>
           <PayButton reservationId={reservation.id} amountUah={reservation.amountUah} />
           <PaymentStatusPoller orderReference={reservation.orderReference} />
@@ -81,17 +84,17 @@ export default async function ReserveSummaryPage({
 
       {reservation.status === "CONFIRMED" && (
         <div className="mt-6 rounded-2xl bg-emerald-600/10 p-5 text-center">
-          <p className="text-sm font-medium text-emerald-700">Оплата успішна. Бронювання підтверджено.</p>
+          <p className="text-sm font-medium text-emerald-700">{t("paidSuccess")}</p>
         </div>
       )}
 
       {(holdExpired || reservation.status === "EXPIRED" || reservation.status === "CANCELLED") && (
         <div className="mt-6 rounded-2xl bg-black/[0.04] p-5 text-center">
           <p className="text-sm text-neutral-600">
-            {reservation.status === "CANCELLED" ? "Бронювання скасовано." : "Термін бронювання сплив або оплата не пройшла."}
+            {reservation.status === "CANCELLED" ? t("cancelledNotice") : t("expiredNotice")}
           </p>
           <Link href="/reserve" className="mt-3 inline-block text-sm font-medium text-neutral-900 underline">
-            Забронювати ще раз
+            {t("rebook")}
           </Link>
         </div>
       )}
@@ -100,7 +103,7 @@ export default async function ReserveSummaryPage({
         href="/home"
         className="mt-8 block w-full rounded-full bg-neutral-900 py-4 text-center text-[15px] font-semibold text-white"
       >
-        На головну
+        {tCommon("home")}
       </Link>
     </>
   );
@@ -115,7 +118,7 @@ export default async function ReserveSummaryPage({
           <Image src="/images/first-page_photo.jpeg" alt="" fill priority sizes="100vw" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/15 to-black/55" />
           <div className="relative z-10 flex h-full flex-col justify-end">
-            <h1 className="text-xl font-medium text-white">Резервація</h1>
+            <h1 className="text-xl font-medium text-white">{t("title")}</h1>
             <p className="mt-2.5 text-sm text-white/70">№ {reservation.orderReference}</p>
           </div>
         </div>
@@ -130,7 +133,7 @@ export default async function ReserveSummaryPage({
       <DesktopSplitScreen avatarUrl={profile?.avatarUrl ?? null}>
         <div className="flex flex-1 flex-col items-center justify-center bg-[#f4f1ec] px-8 py-8 text-neutral-900 lg:px-12">
           <div className="w-full max-w-lg lg:max-w-xl xl:max-w-2xl">
-            <h1 className="text-xl font-medium">Резервація</h1>
+            <h1 className="text-xl font-medium">{t("title")}</h1>
             <p className="mt-2 text-sm text-neutral-500">№ {reservation.orderReference}</p>
             <div className="mt-6">{details}</div>
           </div>

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { getBookableDates, toKyivDateString } from "@/lib/reservations/availability";
 import { DesktopSplitScreen } from "@/components/layout/DesktopSplitScreen";
 import { BackButton } from "@/components/layout/BackButton";
@@ -11,11 +12,9 @@ import { BackButton } from "@/components/layout/BackButton";
 type Court = { id: string; name: string; type: "INDOOR" | "OUTDOOR"; priceUah: number };
 type Slot = { startTime: string; available: boolean };
 
-const WEEKDAY_UA = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-
-function dayLabel(dateStr: string) {
+function dayLabel(dateStr: string, weekdays: string[]) {
   const d = new Date(`${dateStr}T00:00:00.000Z`);
-  return { weekday: WEEKDAY_UA[d.getUTCDay()], day: d.getUTCDate() };
+  return { weekday: weekdays[d.getUTCDay()], day: d.getUTCDate() };
 }
 
 // Display-only: renders a slot's start time as an "HH:00 - HH:00" range,
@@ -50,6 +49,9 @@ export function ReserveFlow({
   venueAddress: string | null;
 }) {
   const router = useRouter();
+  const t = useTranslations("Reserve");
+  const tCommon = useTranslations("Common");
+  const weekdays = t.raw("weekdays") as string[];
   const dates = getBookableDates();
 
   const [courtId, setCourtId] = useState<string | null>(courts[0]?.id ?? null);
@@ -99,7 +101,7 @@ export function ReserveFlow({
           setSlotsResult({
             key: requestKey,
             slots: [],
-            error: "Не вдалося завантажити доступність. Спробуйте ще раз.",
+            error: t("loadFailed"),
           });
         }
       });
@@ -107,7 +109,7 @@ export function ReserveFlow({
     return () => {
       cancelled = true;
     };
-  }, [courtId, date, requestKey]);
+  }, [courtId, date, requestKey, t]);
 
   const slots = slotsResult.key === requestKey ? slotsResult.slots : [];
   const slotsError = slotsResult.key === requestKey ? slotsResult.error : null;
@@ -132,7 +134,7 @@ export function ReserveFlow({
         return;
       }
       if (res.status === 409) {
-        setBookingError("Цей час щойно зайняли. Оберіть інший.");
+        setBookingError(t("slotTaken"));
         setStartTime(null);
         // Refresh availability so the now-taken slot shows as disabled.
         const refreshed = await fetch(`/api/courts/${courtId}/availability?date=${date}`).then((r) => r.json());
@@ -140,13 +142,13 @@ export function ReserveFlow({
         return;
       }
       if (!res.ok) {
-        setBookingError("Щось пішло не так. Спробуйте ще раз.");
+        setBookingError(tCommon("genericError"));
         return;
       }
 
       router.push(`/reserve/summary?id=${body.reservation.id}`);
     } catch {
-      setBookingError("Немає з’єднання з сервером. Перевірте інтернет-з’єднання.");
+      setBookingError(tCommon("networkError"));
     } finally {
       setBooking(false);
     }
@@ -173,11 +175,11 @@ export function ReserveFlow({
     <>
       <div className="mb-3 flex items-center gap-1.5 text-[13px] font-medium text-neutral-500">
         <CalendarIcon />
-        <span>Оберіть дату бронювання</span>
+        <span>{t("chooseDateLabel")}</span>
       </div>
       <div className="flex gap-2.5 overflow-x-auto pb-1">
         {dates.map((d) => {
-          const { weekday, day } = dayLabel(d);
+          const { weekday, day } = dayLabel(d, weekdays);
           const active = d === date;
           return (
             <button
@@ -197,9 +199,9 @@ export function ReserveFlow({
 
       <div className="mb-3 mt-6 flex items-center gap-1.5 text-[13px] font-medium text-neutral-500">
         <ClockIcon />
-        <span>Оберіть час</span>
+        <span>{t("chooseTimeLabel")}</span>
       </div>
-      {loadingSlots && <p className="text-sm text-neutral-400">Завантаження…</p>}
+      {loadingSlots && <p className="text-sm text-neutral-400">{tCommon("loading")}</p>}
       {slotsError && <p className="text-sm text-red-600">{slotsError}</p>}
       {!loadingSlots && !slotsError && (
         <div className="grid grid-cols-2 gap-2.5">
@@ -227,7 +229,7 @@ export function ReserveFlow({
 
       <div className="mt-6 flex items-center justify-between">
         <div>
-          <p className="text-[13px] text-neutral-500">Ціна</p>
+          <p className="text-[13px] text-neutral-500">{t("price")}</p>
           <p className="text-2xl font-bold text-neutral-900">
             {selectedCourt ? `${selectedCourt.priceUah} ₴` : "—"}
           </p>
@@ -238,12 +240,12 @@ export function ReserveFlow({
           disabled={!courtId || !startTime || booking}
           className="rounded-full bg-neutral-900 px-8 py-3.5 text-[15px] font-semibold text-white transition disabled:opacity-40"
         >
-          {booking ? "Бронюємо…" : "Забронювати"}
+          {booking ? t("booking") : t("bookCta")}
         </button>
       </div>
 
       <p className="mt-4 text-center text-[11px] leading-snug text-neutral-400">
-        Оплата на цьому кроці ще не потрібна — місце утримується 10 хвилин після бронювання.
+        {t("disclaimer")}
       </p>
     </>
   );
@@ -274,7 +276,7 @@ export function ReserveFlow({
             </div>
             <Link
               href="/home"
-              aria-label="На головну"
+              aria-label={tCommon("home")}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/25 backdrop-blur-sm"
             >
               <TennisBallIcon />

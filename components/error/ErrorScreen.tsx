@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 // Same visual language as /auth's mobile treatment (components/auth/
 // AuthForm.tsx's card over first-page_photo.jpeg) — reused here rather than
@@ -19,6 +20,8 @@ export function ErrorScreen({
   retryLabel?: string;
   onRetry?: () => void;
 }) {
+  const t = useTranslations("Errors");
+
   return (
     <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-[max(2rem,env(safe-area-inset-top))]">
       <Image src="/images/first-page_photo.jpeg" alt="" fill priority className="object-cover" />
@@ -36,7 +39,7 @@ export function ErrorScreen({
               onClick={onRetry}
               className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black transition"
             >
-              {retryLabel ?? "Спробувати ще раз"}
+              {retryLabel ?? t("retry")}
             </button>
           )}
           <Link
@@ -47,7 +50,7 @@ export function ErrorScreen({
                 : "bg-white text-black"
             }`}
           >
-            На головну
+            {t("home")}
           </Link>
         </div>
       </div>

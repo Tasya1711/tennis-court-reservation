@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 
@@ -16,6 +17,7 @@ export default async function PaymentSuccessPage({
   searchParams: Promise<{ ref?: string }>;
 }) {
   const { ref } = await searchParams;
+  const t = await getTranslations("PaymentSuccess");
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
@@ -50,7 +52,7 @@ export default async function PaymentSuccessPage({
       <div className="absolute inset-0 bg-black/55" />
 
       <div className="relative z-10">
-        <p className="text-2xl font-medium text-white">Дякуємо за бронювання!</p>
+        <p className="text-2xl font-medium text-white">{t("thankYou")}</p>
         <p className="mt-2 text-sm text-white/70">
           {reservation.court.name} · {reservation.date.toISOString().slice(0, 10)} · {reservation.startTime}–{reservation.endTime}
         </p>
@@ -58,7 +60,7 @@ export default async function PaymentSuccessPage({
           href="/home"
           className="mt-8 inline-block w-full rounded-full bg-white px-10 py-4 text-[15px] font-semibold text-black"
         >
-          На головну
+          {t("home")}
         </Link>
       </div>
     </main>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ALLOWED_AVATAR_MIME_TYPES, MAX_AVATAR_BYTES } from "@/lib/validation/avatar";
 import { uploadErrorMessages } from "@/lib/upload-errors";
 import { usernameSchema } from "@/lib/validation/auth";
@@ -22,6 +23,8 @@ export function EditProfileForm({
   initialUsername: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("AccountEdit");
+  const locale = useLocale() as "uk" | "en";
   const inputRef = useRef<HTMLInputElement>(null);
   const usernameCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -46,11 +49,11 @@ export function EditProfileForm({
     if (!selected) return;
 
     if (!ALLOWED_AVATAR_MIME_TYPES.includes(selected.type)) {
-      setAvatarError(uploadErrorMessages.unsupportedType.uk);
+      setAvatarError(uploadErrorMessages.unsupportedType[locale]);
       return;
     }
     if (selected.size > MAX_AVATAR_BYTES) {
-      setAvatarError(uploadErrorMessages.tooLarge.uk);
+      setAvatarError(uploadErrorMessages.tooLarge[locale]);
       return;
     }
 
@@ -82,7 +85,7 @@ export function EditProfileForm({
               : body.error === "unauthorized"
                 ? "unauthorized"
                 : "uploadFailed";
-        setAvatarError(uploadErrorMessages[key].uk);
+        setAvatarError(uploadErrorMessages[key][locale]);
         setUploadingAvatar(false);
         return;
       }
@@ -94,7 +97,7 @@ export function EditProfileForm({
       setUploadingAvatar(false);
       router.refresh();
     } catch {
-      setAvatarError(uploadErrorMessages.network.uk);
+      setAvatarError(uploadErrorMessages.network[locale]);
       setUploadingAvatar(false);
     }
   }
@@ -135,11 +138,11 @@ export function EditProfileForm({
 
     const parsed = usernameSchema.safeParse(username);
     if (!parsed.success) {
-      setUsernameError(validationMessages.usernameFormat.uk);
+      setUsernameError(validationMessages.usernameFormat[locale]);
       return;
     }
     if (usernameStatus === "taken") {
-      setUsernameError(validationMessages.usernameTaken.uk);
+      setUsernameError(validationMessages.usernameTaken[locale]);
       return;
     }
 
@@ -154,17 +157,17 @@ export function EditProfileForm({
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setUsernameError(
-          body.error === "username_taken" ? validationMessages.usernameTaken.uk : validationMessages.usernameFormat.uk,
+          body.error === "username_taken" ? validationMessages.usernameTaken[locale] : validationMessages.usernameFormat[locale],
         );
         setSavingUsername(false);
         return;
       }
 
       setSavingUsername(false);
-      setSavedMessage("Ім’я користувача оновлено.");
+      setSavedMessage(t("saved"));
       router.refresh();
     } catch {
-      setUsernameError(uploadErrorMessages.network.uk);
+      setUsernameError(uploadErrorMessages.network[locale]);
       setSavingUsername(false);
     }
   }
@@ -182,7 +185,7 @@ export function EditProfileForm({
         >
           <Image src={displaySrc} alt="" fill sizes="112px" className="object-cover" />
           <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-medium text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
-            Змінити фото
+            {t("changePhoto")}
           </span>
         </button>
 
@@ -203,7 +206,7 @@ export function EditProfileForm({
             disabled={uploadingAvatar}
             className="mb-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition disabled:opacity-50"
           >
-            {uploadingAvatar ? "Завантаження…" : "Зберегти фото"}
+            {uploadingAvatar ? t("uploading") : t("savePhoto")}
           </button>
         )}
       </div>
@@ -211,7 +214,7 @@ export function EditProfileForm({
       <form onSubmit={handleUsernameSave} className="mt-6 space-y-4">
         <div>
           <label className="mb-1.5 block text-[13px] font-medium text-white/70" htmlFor="edit-username">
-            Ім’я користувача
+            {t("usernameLabel")}
           </label>
           <input
             id="edit-username"
@@ -222,13 +225,13 @@ export function EditProfileForm({
             onChange={(e) => onUsernameChange(e.target.value)}
           />
           {usernameChanged && usernameStatus === "checking" && (
-            <p className="mt-1 text-xs text-white/40">Перевірка…</p>
+            <p className="mt-1 text-xs text-white/40">{t("checkingUsername")}</p>
           )}
           {usernameChanged && usernameStatus === "taken" && (
-            <p className="mt-1 text-xs text-red-300">{validationMessages.usernameTaken.uk}</p>
+            <p className="mt-1 text-xs text-red-300">{validationMessages.usernameTaken[locale]}</p>
           )}
           {usernameChanged && usernameStatus === "available" && (
-            <p className="mt-1 text-xs text-emerald-300">Доступне</p>
+            <p className="mt-1 text-xs text-emerald-300">{t("usernameAvailable")}</p>
           )}
           {usernameError && <p className="mt-1 text-xs text-red-300">{usernameError}</p>}
         </div>
@@ -240,7 +243,7 @@ export function EditProfileForm({
           disabled={!usernameChanged || savingUsername || usernameStatus === "taken"}
           className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-black transition disabled:opacity-50"
         >
-          {savingUsername ? "Збереження…" : "Зберегти ім’я"}
+          {savingUsername ? t("saving") : t("saveName")}
         </button>
       </form>
     </div>
