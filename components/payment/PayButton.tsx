@@ -21,6 +21,10 @@ export function PayButton({ reservationId, amountUah }: { reservationId: string;
       });
       const body = await res.json().catch(() => ({}));
 
+      if (res.status === 401) {
+        setError(tCommon("sessionExpired"));
+        return;
+      }
       if (res.status === 410) {
         setError(t("holdExpiredError"));
         return;

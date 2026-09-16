@@ -14,7 +14,8 @@
     "delete": "Delete",
     "loading": "Loading…",
     "networkError": "Couldn't reach the server. Check your connection.",
-    "genericError": "Something went wrong. Please try again."
+    "genericError": "Something went wrong. Please try again.",
+    "sessionExpired": "Your session has expired. Please log in again."
   },
   "DesktopSplit": {
     "badge": "TENNIS CLUB",

@@ -133,6 +133,10 @@ export function ReserveFlow({
         router.push("/auth");
         return;
       }
+      if (res.status === 401) {
+        setBookingError(tCommon("sessionExpired"));
+        return;
+      }
       if (res.status === 409) {
         setBookingError(t("slotTaken"));
         setStartTime(null);

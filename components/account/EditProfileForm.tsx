@@ -24,6 +24,7 @@ export function EditProfileForm({
 }) {
   const router = useRouter();
   const t = useTranslations("AccountEdit");
+  const tCommon = useTranslations("Common");
   const locale = useLocale() as "uk" | "en";
   const inputRef = useRef<HTMLInputElement>(null);
   const usernameCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -157,7 +158,11 @@ export function EditProfileForm({
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setUsernameError(
-          body.error === "username_taken" ? validationMessages.usernameTaken[locale] : validationMessages.usernameFormat[locale],
+          res.status === 401
+            ? tCommon("sessionExpired")
+            : body.error === "username_taken"
+              ? validationMessages.usernameTaken[locale]
+              : validationMessages.usernameFormat[locale],
         );
         setSavingUsername(false);
         return;

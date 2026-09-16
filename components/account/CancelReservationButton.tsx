@@ -18,7 +18,13 @@ export function CancelReservationButton({ reservationId }: { reservationId: stri
     try {
       const res = await fetch(`/api/reservations/${reservationId}/cancel`, { method: "POST" });
       if (!res.ok) {
-        setError(res.status === 409 ? t("cancelNotAllowed") : t("cancelFailed"));
+        setError(
+          res.status === 401
+            ? tCommon("sessionExpired")
+            : res.status === 409
+              ? t("cancelNotAllowed")
+              : t("cancelFailed"),
+        );
         setLoading(false);
         setConfirming(false);
         return;
