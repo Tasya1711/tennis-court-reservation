@@ -84,7 +84,7 @@ export function AvatarOnboardingForm() {
   const displaySrc = previewUrl ?? "/images/user-photo.jpeg";
 
   return (
-    <div className="w-full max-w-sm rounded-3xl border border-white/15 bg-black/40 p-6 text-center shadow-2xl backdrop-blur-xl">
+    <div className="mx-auto w-full max-w-sm rounded-3xl border border-white/15 bg-black/40 p-6 text-center shadow-2xl backdrop-blur-xl">
       <h1 className="mb-1 text-lg font-semibold text-white">{t("title")}</h1>
       <p className="mb-6 text-sm text-white/60">{t("subtitle")}</p>
 

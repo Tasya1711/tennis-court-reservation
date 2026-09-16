@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { getBookableDates, toKyivDateString } from "@/lib/reservations/availability";
@@ -49,12 +49,22 @@ export function ReserveFlow({
   venueAddress: string | null;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations("Reserve");
   const tCommon = useTranslations("Common");
   const weekdays = t.raw("weekdays") as string[];
   const dates = getBookableDates();
 
-  const [courtId, setCourtId] = useState<string | null>(courts[0]?.id ?? null);
+  // Home links to /reserve?court=<id> for the court the user just tapped —
+  // only trust it if it's actually one of the real, active courts, so a
+  // stale/garbage id in the URL can't leave courtId pointing at nothing.
+  // Read once for the initial selection; the pills below still update
+  // courtId locally as the user switches courts on this page.
+  const requestedCourtId = searchParams.get("court");
+  const initialCourtId =
+    requestedCourtId && courts.some((c) => c.id === requestedCourtId) ? requestedCourtId : (courts[0]?.id ?? null);
+
+  const [courtId, setCourtId] = useState<string | null>(initialCourtId);
   const [date, setDate] = useState<string>(dates[0] ?? toKyivDateString(new Date()));
   const [startTime, setStartTime] = useState<string | null>(null);
 
@@ -137,6 +147,10 @@ export function ReserveFlow({
         setBookingError(tCommon("sessionExpired"));
         return;
       }
+      if (res.status === 429) {
+        setBookingError(t("rateLimited"));
+        return;
+      }
       if (res.status === 409) {
         setBookingError(t("slotTaken"));
         setStartTime(null);
@@ -159,7 +173,7 @@ export function ReserveFlow({
   }
 
   const courtPills = (
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {courts.map((court) => (
         <button
           key={court.id}
@@ -181,7 +195,7 @@ export function ReserveFlow({
         <CalendarIcon />
         <span>{t("chooseDateLabel")}</span>
       </div>
-      <div className="flex gap-2.5 overflow-x-auto pb-1">
+      <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {dates.map((d) => {
           const { weekday, day } = dayLabel(d, weekdays);
           const active = d === date;
@@ -304,11 +318,9 @@ export function ReserveFlow({
 
       {/* ── Tablet/desktop (>=768px) — shared Tennis_desktop composition. ── */}
       <DesktopSplitScreen avatarUrl={avatarUrl}>
-        <div className="relative flex flex-1 flex-col items-center bg-[#f4f1ec] px-8 py-8 text-neutral-900 lg:px-12">
-          <div className="absolute left-6 top-6 lg:left-8 lg:top-8">
-            <BackButton />
-          </div>
+        <div className="flex flex-1 flex-col items-center bg-[#f4f1ec] px-8 py-8 text-neutral-900 lg:px-12">
           <div className="w-full max-w-lg lg:max-w-xl xl:max-w-2xl">
+            <BackButton className="mb-4" />
             {courtPills}
             <div className="mt-6">{bookingForm}</div>
           </div>

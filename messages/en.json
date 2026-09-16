@@ -46,6 +46,7 @@
     "coachTitle": "Book a lesson with a coach",
     "coachSubtitle": "Work with the best coaches",
     "coachCta": "Book",
+    "coachComingSoon": "Coming soon — coach booking is not available yet.",
     "bookCta": "Make a reservation",
     "disclaimer": "Final price and availability are confirmed on the booking page."
   },
@@ -58,7 +59,8 @@
     "bookCta": "Book",
     "booking": "Booking…",
     "disclaimer": "No payment needed at this step — the slot is held for 10 minutes after booking.",
-    "slotTaken": "This time was just taken. Please choose another."
+    "slotTaken": "This time was just taken. Please choose another.",
+    "rateLimited": "Too many booking attempts. Please try again in a little while."
   },
   "ReserveSummary": {
     "title": "Reservation",

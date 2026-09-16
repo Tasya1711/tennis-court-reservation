@@ -98,12 +98,17 @@ export function AccountScreen({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-lg font-medium text-white">{username || t("defaultProfileName")}</h1>
+                {/* Visible pill stays 28px (h-7/w-7); the -m-2 negative
+                    margin expands the actual tap target to 44px without
+                    shifting surrounding layout or enlarging the icon. */}
                 <Link
                   href="/account/edit"
                   aria-label={t("editAria")}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm"
+                  className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center"
                 >
-                  <EditIcon />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+                    <EditIcon />
+                  </span>
                 </Link>
               </div>
               {email && <p className="text-sm text-white/70">{email}</p>}
@@ -144,12 +149,16 @@ export function AccountScreen({
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-lg font-medium">{username || t("defaultProfileName")}</h1>
+                    {/* Same expanded-tap-target technique as the mobile
+                        edit link above — visible pill stays 24px. */}
                     <Link
                       href="/account/edit"
                       aria-label={t("editAria")}
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/[0.06] text-neutral-600"
+                      className="-m-[10px] flex h-11 w-11 shrink-0 items-center justify-center"
                     >
-                      <EditIcon />
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/[0.06] text-neutral-600">
+                        <EditIcon />
+                      </span>
                     </Link>
                   </div>
                   {email && <p className="text-sm text-neutral-500">{email}</p>}

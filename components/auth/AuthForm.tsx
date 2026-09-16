@@ -37,6 +37,31 @@ export function AuthForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Server-decided, not client-decided: the actual allow/deny call and the
+  // attempt count both live in POST /api/auth/rate-limit, backed by the
+  // AuthAttempt table — this only awaits and displays the result, so
+  // disabling/patching this function client-side can't grant more
+  // attempts (ARCHITECTURE.md §9).
+  async function checkAuthRateLimit(scope: "login" | "register", emailValue: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/auth/rate-limit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope, email: emailValue }),
+      });
+      if (res.status === 429) {
+        // Reuses the existing, already-translated rate-limit copy from
+        // auth-errors.ts instead of adding a parallel message.
+        setFormError(authErrorMessage({ code: "over_request_rate_limit" }, locale));
+        return false;
+      }
+      return res.ok;
+    } catch {
+      setFormError(tCommon("networkError"));
+      return false;
+    }
+  }
+
   function switchMode(next: Mode) {
     setMode(next);
     setFormError(null);
@@ -88,6 +113,10 @@ export function AuthForm() {
     }
 
     setSubmitting(true);
+    if (!(await checkAuthRateLimit("register", parsed.data!.email))) {
+      setSubmitting(false);
+      return;
+    }
     const { data, error } = await supabase.auth.signUp({
       email: parsed.data!.email,
       password: parsed.data!.password,
@@ -169,6 +198,10 @@ export function AuthForm() {
     }
 
     setSubmitting(true);
+    if (!(await checkAuthRateLimit("login", parsed.data.email))) {
+      setSubmitting(false);
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
     setSubmitting(false);
 

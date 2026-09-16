@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { RevealOnMount } from "@/components/home/RevealOnMount";
+import { CoachBookingButton } from "@/components/home/CoachBookingButton";
 import { DesktopSplitScreen } from "@/components/layout/DesktopSplitScreen";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
@@ -51,7 +52,7 @@ export function HomeScreen({
         return (
           <Link
             key={court.id}
-            href="/reserve"
+            href={`/reserve?court=${court.id}`}
             className={`relative flex h-20 flex-col justify-end rounded-xl border p-2.5 transition active:scale-[0.97] ${
               isHighlighted ? "border-lime-300 bg-white/[0.06]" : "border-white/10 bg-white/[0.06]"
             }`}
@@ -94,9 +95,7 @@ export function HomeScreen({
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <p className="text-sm font-medium leading-snug text-white">{t("coachTitle")}</p>
         <p className="text-xs text-white/50">{t("coachSubtitle")}</p>
-        <span className="mt-2 self-start rounded-full bg-lime-300 px-3 py-1 text-[11px] font-semibold text-black">
-          {t("coachCta")}
-        </span>
+        <CoachBookingButton />
       </div>
     </div>
   );

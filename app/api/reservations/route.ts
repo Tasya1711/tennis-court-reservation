@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { createReservationSchema } from "@/lib/validation/reservation";
 import { SLOT_HOLD_MINUTES, slotToUtcRange } from "@/lib/reservations/availability";
+import { checkRateLimit, getClientIp, hashRateLimitKey } from "@/lib/rate-limit";
 
 // Creates a PENDING_PAYMENT hold. The database — a partial unique index on
 // (court_id, start_at) for active statuses — is the actual source of truth
@@ -26,6 +27,20 @@ export async function POST(request: Request) {
   const profile = await prisma.profile.findUnique({ where: { id: userId }, select: { role: true } });
   if (profile?.role === "GUEST") {
     return NextResponse.json({ error: "guest_not_allowed" }, { status: 403 });
+  }
+
+  // Independently server-enforced — every reservation, regardless of
+  // which client/UI made the request, goes through this one route, so
+  // there is no frontend path that bypasses this check (ARCHITECTURE.md
+  // §9). Keyed by user + IP rather than IP alone, so one abusive account
+  // on a shared/NAT'd IP can't throttle other legitimate users there.
+  const rateLimitKey = hashRateLimitKey("reservation", userId, getClientIp(request));
+  const rateLimit = await checkRateLimit(rateLimitKey, "reservation");
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited", retryAfterSeconds: rateLimit.retryAfterSeconds },
+      { status: 429 },
+    );
   }
 
   const body = await request.json().catch(() => null);
