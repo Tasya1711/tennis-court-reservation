@@ -2,11 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { PayButton } from "@/components/payment/PayButton";
 import { PaymentStatusPoller } from "@/components/payment/PaymentStatusPoller";
 import { DesktopSplitScreen } from "@/components/layout/DesktopSplitScreen";
+
+const idSchema = z.string().uuid();
 
 // A server component's render is a single point-in-time snapshot for this
 // request — reading the clock here isn't the hydration-mismatch hazard
@@ -40,7 +43,7 @@ export default async function ReserveSummaryPage({
     redirect("/auth");
   }
 
-  if (!id) notFound();
+  if (!id || !idSchema.safeParse(id).success) notFound();
 
   const [reservation, profile] = await Promise.all([
     prisma.reservation.findUnique({

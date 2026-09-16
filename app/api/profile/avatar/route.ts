@@ -16,7 +16,23 @@ export async function POST(request: Request) {
   }
   const userId = claimsData.claims.sub;
 
-  const formData = await request.formData();
+  // Reject an oversized body by its declared Content-Length before parsing
+  // it — multipart overhead on top of the file itself, so allow some slack
+  // above MAX_AVATAR_BYTES rather than the exact limit. Without this check,
+  // request.formData() can throw on a very large body (observed as a raw
+  // 500, "Failed to parse body as FormData") before the file.size check
+  // below ever runs.
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_AVATAR_BYTES + 64 * 1024) {
+    return NextResponse.json({ error: "too_large" }, { status: 400 });
+  }
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "too_large" }, { status: 400 });
+  }
   const file = formData.get("avatar");
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "missing_file" }, { status: 400 });
