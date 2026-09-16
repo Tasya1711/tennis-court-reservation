@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CancelReservationButton } from "@/components/account/CancelReservationButton";
+import { PendingReservationActions } from "@/components/account/PendingReservationActions";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { DesktopSplitScreen } from "@/components/layout/DesktopSplitScreen";
 import { BackButton } from "@/components/layout/BackButton";
@@ -169,6 +170,10 @@ export function AccountScreen({
 function ReservationCard({ reservation, now }: { reservation: Reservation; now: number }) {
   const t = useTranslations("Account");
   const isCancellable = reservation.status === "CONFIRMED" && new Date(reservation.startAtIso).getTime() > now;
+  // The account page (app/account/page.tsx) already drops any PENDING_PAYMENT
+  // reservation whose hold has expired before it reaches this list, so a
+  // PENDING_PAYMENT row here is guaranteed still within its hold.
+  const isPending = reservation.status === "PENDING_PAYMENT";
 
   const paymentStatusLabel: Record<string, string> = {
     UNPAID: t("paymentUnpaid"),
@@ -195,6 +200,7 @@ function ReservationCard({ reservation, now }: { reservation: Reservation; now: 
       </div>
 
       {isCancellable && <CancelReservationButton reservationId={reservation.id} />}
+      {isPending && <PendingReservationActions reservationId={reservation.id} />}
     </div>
   );
 }

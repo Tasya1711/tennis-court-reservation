@@ -108,7 +108,14 @@
     "paymentUnpaid": "Unpaid",
     "paymentPaid": "Paid",
     "paymentRefunded": "Refunded",
-    "paymentFailed": "Failed"
+    "paymentFailed": "Failed",
+    "continuePayment": "Continue payment",
+    "deleteReservation": "Delete reservation",
+    "confirmDeleteReservation": "Delete this reservation?",
+    "yesDeleteReservation": "Yes, delete",
+    "deletingReservation": "Deleting…",
+    "deleteNotAllowed": "The payment hold has expired. This reservation can no longer be deleted.",
+    "deleteFailed": "Couldn't delete the reservation. Please try again."
   },
   "AccountEdit": {
     "title": "Edit profile",
@@ -170,6 +177,73 @@
   "PaymentSuccess": {
     "thankYou": "Thank you for your reservation!",
     "home": "Home"
+  },
+  "Legal": {
+    "demoNotice": "This is placeholder text for a portfolio project, not legal advice.",
+    "contactLabel": "Contact",
+    "contactValue": "support@tennis-club.example",
+    "linkTerms": "Terms of use",
+    "linkPrivacy": "Privacy policy",
+    "linkRefund": "Refund policy",
+    "privacy": {
+      "title": "Privacy policy",
+      "sections": [
+        {
+          "heading": "What data we collect",
+          "body": "When you register and book, we store your email, username, an optional profile photo, and details about your reservations (court, date, time, payment status)."
+        },
+        {
+          "heading": "How we use your data",
+          "body": "Your data is used solely to create and confirm reservations, sign you in, and show your booking history."
+        },
+        {
+          "heading": "Payment processing",
+          "body": "Payments are processed by our payment provider (Stripe); we never store card numbers on our own servers — all sensitive payment details are entered directly on the provider's side."
+        },
+        {
+          "heading": "Data storage and protection",
+          "body": "Data is stored in a secured Supabase database with restricted access and is deleted on the account owner's request."
+        }
+      ]
+    },
+    "terms": {
+      "title": "Terms of use",
+      "sections": [
+        {
+          "heading": "Service description",
+          "body": "This service lets you view tennis court availability, create reservations, and pay for them online."
+        },
+        {
+          "heading": "Booking and payment",
+          "body": "A reservation is held for a limited time pending payment; an unpaid reservation is automatically cancelled and the slot becomes available again."
+        },
+        {
+          "heading": "User obligations",
+          "body": "Users agree to provide accurate information when registering and to cancel promptly any reservation they no longer plan to use."
+        },
+        {
+          "heading": "Limitation of liability",
+          "body": "The service is provided \"as is\", without guarantees of continuous court availability or freedom from technical issues."
+        }
+      ]
+    },
+    "refund": {
+      "title": "Refund policy",
+      "sections": [
+        {
+          "heading": "Cancellation terms",
+          "body": "A confirmed reservation can be cancelled from your account before the booked time begins."
+        },
+        {
+          "heading": "Refund process",
+          "body": "Funds for a cancelled reservation are refunded to the original payment method within a few business days."
+        },
+        {
+          "heading": "Cases where a refund isn't possible",
+          "body": "Refunds aren't issued for reservations whose time has already started or passed, or for unpaid (automatically cancelled) reservations."
+        }
+      ]
+    }
   },
   "Errors": {
     "serverTitle": "Something went wrong",

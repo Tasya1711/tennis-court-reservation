@@ -40,11 +40,17 @@ export default async function AccountPage() {
   // PENDING_PAYMENT but past their hold window and not yet swept — are
   // dead ends the customer can't act on, so they're dropped from the
   // dashboard rather than just hidden with CSS. Confirmed, still-payable,
-  // and cancelled reservations are real history and stay visible.
+  // and a CONFIRMED-then-cancelled reservation are real history and stay
+  // visible. A PENDING_PAYMENT hold the user deleted before ever paying
+  // (CANCELLED + still UNPAID — see PendingReservationActions) never
+  // became a real booking, so it's dropped too, not kept as a ghost row —
+  // distinct from a paid reservation that was later cancelled, which
+  // stays as genuine history.
   const now = requestTime();
   const visibleReservations = reservations.filter((r) => {
     const holdExpired = r.status === "PENDING_PAYMENT" && r.expiresAt.getTime() < now;
-    return r.status !== "EXPIRED" && !holdExpired;
+    const deletedUnpaidHold = r.status === "CANCELLED" && r.paymentStatus === "UNPAID";
+    return r.status !== "EXPIRED" && !holdExpired && !deletedUnpaidHold;
   });
 
   return (

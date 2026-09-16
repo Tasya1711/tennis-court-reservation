@@ -5,9 +5,12 @@ import { prisma } from "@/lib/prisma";
 
 const idSchema = z.string().uuid();
 
-// ARCHITECTURE.md §7 step 5: only the owning user (or admin), only while
-// CONFIRMED and before startAt; sets CANCELLED, which also frees the slot
-// (GET /api/courts/:id/availability only blocks on CONFIRMED / a still-live
+// ARCHITECTURE.md §7 step 5: only the owning user (or admin), and only while
+// either (a) CONFIRMED and before startAt, or (b) PENDING_PAYMENT and still
+// within its hold window (expiresAt in the future — an already-expired hold
+// is not user-cancellable here, it's EXPIRED by the M6 cron/lazy-expiry
+// instead). Either branch sets CANCELLED, which also frees the slot (GET
+// /api/courts/:id/availability only blocks on CONFIRMED / a still-live
 // PENDING_PAYMENT, so a CANCELLED row is already excluded — no separate
 // "free the slot" step is needed).
 export async function POST(
@@ -47,17 +50,20 @@ export async function POST(
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const isEligible = reservation.status === "CONFIRMED" && reservation.startAt.getTime() > Date.now();
-  if (!isEligible) {
+  const now = Date.now();
+  const isConfirmedCancellable = reservation.status === "CONFIRMED" && reservation.startAt.getTime() > now;
+  const isPendingCancellable = reservation.status === "PENDING_PAYMENT" && reservation.expiresAt.getTime() > now;
+  if (!isConfirmedCancellable && !isPendingCancellable) {
     return NextResponse.json({ error: "not_cancellable" }, { status: 409 });
   }
 
-  // Guarded by the WHERE clause, not just the isEligible check above — the
-  // same idempotency pattern as the payment webhooks, so a duplicate/racing
-  // cancel request (or one that lost a race with a webhook or the M6 cron)
-  // can't double-apply.
+  // Guarded by the WHERE clause (matching whichever status made it
+  // eligible above), not just the isEligible check — the same idempotency
+  // pattern as the payment webhooks, so a duplicate/racing cancel request
+  // (or one that lost a race with a webhook confirming payment, or the M6
+  // cron expiring the hold) can't double-apply.
   const result = await prisma.reservation.updateMany({
-    where: { id: reservation.id, status: "CONFIRMED" },
+    where: { id: reservation.id, status: reservation.status },
     data: { status: "CANCELLED" },
   });
 

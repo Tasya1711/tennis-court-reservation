@@ -25,6 +25,7 @@ export default async function ReserveSummaryPage({
   const { id } = await searchParams;
   const t = await getTranslations("ReserveSummary");
   const tCommon = await getTranslations("Common");
+  const tLegal = await getTranslations("Legal");
 
   const STATUS_LABEL: Record<string, string> = {
     PENDING_PAYMENT: t("statusPending"),
@@ -79,6 +80,19 @@ export default async function ReserveSummaryPage({
           </p>
           <PayButton reservationId={reservation.id} amountUah={reservation.amountUah} />
           <PaymentStatusPoller orderReference={reservation.orderReference} />
+          <p className="mt-4 text-center text-[11px] leading-snug text-neutral-400">
+            <Link href="/legal/terms" className="underline underline-offset-2">
+              {tLegal("linkTerms")}
+            </Link>
+            {" · "}
+            <Link href="/legal/privacy" className="underline underline-offset-2">
+              {tLegal("linkPrivacy")}
+            </Link>
+            {" · "}
+            <Link href="/legal/refund-policy" className="underline underline-offset-2">
+              {tLegal("linkRefund")}
+            </Link>
+          </p>
         </div>
       )}
 
