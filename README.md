@@ -10,7 +10,7 @@
 
 ## Overview
 
-Tennis Court Reservation is a self-directed concept project for a fictional single-venue tennis club in Ukraine, built to demonstrate a production-shaped full-stack implementation rather than a template with a booking form bolted on. Every reservation, payment, and permission check is enforced server-side against a real Postgres database — nothing about availability, booking, or payment confirmation is decided in the browser. Deeper implementation notes — schema, security model, the payment/webhook flow — live in [ARCHITECTURE.md](./ARCHITECTURE.md).
+Tennis Court Reservation is a self-directed concept project for a fictional single-venue tennis club in Ukraine, built to demonstrate a production-shaped full-stack implementation rather than a template with a booking form bolted on. Every reservation, payment, and permission check is enforced server-side against a real Postgres database - nothing about availability, booking, or payment confirmation is decided in the browser. Deeper implementation notes — schema, security model, the payment/webhook flow — live in [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Experience
 
