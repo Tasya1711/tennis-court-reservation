@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -13,6 +13,18 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// Disables pinch/gesture zoom — this is a booking UI, not zoomable content,
+// and unintentional zoom (a stray pinch on a court card) breaks the layout.
+// `width: device-width` + initialScale 1 is unchanged from Next's own
+// default, so responsive breakpoints are unaffected; only user-initiated
+// scaling is turned off.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Metadata");
