@@ -22,6 +22,10 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // SameSite=None (+ Secure, which None requires) so the session
+      // cookie survives when this app is embedded in a cross-site iframe.
+      // Must match lib/supabase/client.ts and lib/supabase/server.ts.
+      cookieOptions: { sameSite: "none", secure: true },
       cookies: {
         getAll() {
           return request.cookies.getAll();

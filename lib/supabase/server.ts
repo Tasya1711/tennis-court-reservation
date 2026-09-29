@@ -13,6 +13,10 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // SameSite=None (+ Secure, which None requires) so the session
+      // cookie survives when this app is embedded in a cross-site iframe.
+      // Must match lib/supabase/client.ts and lib/supabase/proxy.ts.
+      cookieOptions: { sameSite: "none", secure: true },
       cookies: {
         getAll() {
           return cookieStore.getAll();
