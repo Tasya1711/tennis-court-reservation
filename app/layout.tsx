@@ -28,9 +28,33 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Metadata");
+  const description = t("description");
+  // 1200x630 (1.91:1) — the standard large-card size for Open Graph / X.
+  const socialImage = {
+    url: "/images/og-tennis.jpg",
+    width: 1200,
+    height: 630,
+    alt: "Tennis racket and ball on a green tennis court",
+  };
   return {
+    // Absolute base so the relative image URL above resolves to the real
+    // site origin, not localhost, in social previews.
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
     title: "Tennis",
-    description: t("description"),
+    description,
+    openGraph: {
+      title: "Tennis",
+      description,
+      siteName: "Tennis Court Reservation",
+      type: "website",
+      images: [socialImage],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Tennis",
+      description,
+      images: [socialImage],
+    },
   };
 }
 
