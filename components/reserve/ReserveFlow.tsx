@@ -10,7 +10,7 @@ import { DesktopSplitScreen } from "@/components/layout/DesktopSplitScreen";
 import { BackButton } from "@/components/layout/BackButton";
 
 type Court = { id: string; name: string; type: "INDOOR" | "OUTDOOR"; priceUah: number };
-type Slot = { startTime: string; available: boolean };
+type Slot = { startTime: string; available: boolean; status: "available" | "taken" | "past" };
 
 function dayLabel(dateStr: string, weekdays: string[]) {
   const d = new Date(`${dateStr}T00:00:00.000Z`);
@@ -41,10 +41,12 @@ function shortVenueLabel(address: string | null): string {
 
 export function ReserveFlow({
   courts,
+  firstAvailableDates,
   avatarUrl,
   venueAddress,
 }: {
   courts: Court[];
+  firstAvailableDates: Record<string, string | null>;
   avatarUrl: string | null;
   venueAddress: string | null;
 }) {
@@ -65,7 +67,15 @@ export function ReserveFlow({
     requestedCourtId && courts.some((c) => c.id === requestedCourtId) ? requestedCourtId : (courts[0]?.id ?? null);
 
   const [courtId, setCourtId] = useState<string | null>(initialCourtId);
-  const [date, setDate] = useState<string>(dates[0] ?? toKyivDateString(new Date()));
+  // Open on the first day that still has a free slot for this court (the
+  // server computed it from real availability), falling back to today. Once
+  // the visitor picks a date themselves, that choice is never overridden.
+  const defaultDateFor = (id: string | null) => {
+    const first = id ? firstAvailableDates[id] : null;
+    return first && dates.includes(first) ? first : (dates[0] ?? toKyivDateString(new Date()));
+  };
+  const [date, setDate] = useState<string>(() => defaultDateFor(initialCourtId));
+  const [dateChosenByUser, setDateChosenByUser] = useState(false);
   const [startTime, setStartTime] = useState<string | null>(null);
 
   // Availability result is keyed by the (court, date) it was fetched for, so
@@ -123,6 +133,7 @@ export function ReserveFlow({
 
   const slots = slotsResult.key === requestKey ? slotsResult.slots : [];
   const slotsError = slotsResult.key === requestKey ? slotsResult.error : null;
+  const visibleSlots = slots.filter((slot) => slot.status !== "past");
 
   async function handleBook() {
     if (!courtId || !startTime) return;
@@ -178,7 +189,10 @@ export function ReserveFlow({
         <button
           key={court.id}
           type="button"
-          onClick={() => setCourtId(court.id)}
+          onClick={() => {
+            setCourtId(court.id);
+            if (!dateChosenByUser) setDate(defaultDateFor(court.id));
+          }}
           className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-medium transition ${
             court.id === courtId ? "bg-lime-300 text-black" : "bg-black/35 text-white backdrop-blur-sm"
           }`}
@@ -203,7 +217,10 @@ export function ReserveFlow({
             <button
               key={d}
               type="button"
-              onClick={() => setDate(d)}
+              onClick={() => {
+                setDate(d);
+                setDateChosenByUser(true);
+              }}
               className={`flex w-16 shrink-0 flex-col items-center rounded-xl py-2.5 transition ${
                 active ? "border-2 border-neutral-900 bg-white" : "border-2 border-transparent bg-white/70"
               }`}
@@ -222,25 +239,36 @@ export function ReserveFlow({
       {loadingSlots && <p className="text-sm text-neutral-400">{tCommon("loading")}</p>}
       {slotsError && <p className="text-sm text-red-600">{slotsError}</p>}
       {!loadingSlots && !slotsError && (
-        <div className="grid grid-cols-2 gap-2.5">
-          {slots.map((slot) => (
-            <button
-              key={slot.startTime}
-              type="button"
-              disabled={!slot.available}
-              onClick={() => setStartTime(slot.startTime)}
-              className={`rounded-xl py-3 text-sm font-medium transition ${
-                !slot.available
-                  ? "cursor-not-allowed bg-black/5 text-neutral-300 line-through"
-                  : slot.startTime === startTime
-                    ? "bg-neutral-900 text-white"
-                    : "bg-black/5 text-neutral-700 active:scale-[0.97]"
-              }`}
-            >
-              {slotRangeLabel(slot.startTime)}
-            </button>
-          ))}
-        </div>
+        <>
+          {/* Slots that have already started are dropped rather than greyed
+              out, so elapsed time never looks like another customer's booking.
+              Genuinely taken slots stay visible and struck through. */}
+          {visibleSlots.length === 0 && (
+            <p className="rounded-xl bg-black/5 px-4 py-3 text-sm text-neutral-500">{t("noSlotsLeft")}</p>
+          )}
+          {visibleSlots.length > 0 && !visibleSlots.some((s) => s.available) && (
+            <p className="mb-3 rounded-xl bg-black/5 px-4 py-3 text-sm text-neutral-500">{t("fullyBooked")}</p>
+          )}
+          <div className="grid grid-cols-2 gap-2.5">
+            {visibleSlots.map((slot) => (
+              <button
+                key={slot.startTime}
+                type="button"
+                disabled={!slot.available}
+                onClick={() => setStartTime(slot.startTime)}
+                className={`rounded-xl py-3 text-sm font-medium transition ${
+                  !slot.available
+                    ? "cursor-not-allowed bg-black/5 text-neutral-300 line-through"
+                    : slot.startTime === startTime
+                      ? "bg-neutral-900 text-white"
+                      : "bg-black/5 text-neutral-700 active:scale-[0.97]"
+                }`}
+              >
+                {slotRangeLabel(slot.startTime)}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {bookingError && <p className="mt-4 text-center text-sm text-red-600">{bookingError}</p>}

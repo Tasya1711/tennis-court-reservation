@@ -38,9 +38,8 @@ export function toKyivDateString(instant: Date): string {
   return kyivDateFormatter.format(instant); // en-CA locale formats as YYYY-MM-DD
 }
 
-export function getBookableDates(days = 14): string[] {
+export function getBookableDates(days = 14, now = Date.now()): string[] {
   const dates: string[] = [];
-  const now = Date.now();
   for (let i = 0; i < days; i++) {
     dates.push(toKyivDateString(new Date(now + i * 24 * 60 * 60 * 1000)));
   }
@@ -56,4 +55,39 @@ export function slotToUtcRange(date: string, startTime: string) {
   const startAt = fromZonedTime(`${date}T${startTime}:00`, TIMEZONE);
   const endAt = fromZonedTime(`${date}T${endTime}:00`, TIMEZONE);
   return { startAt, endAt, endTime };
+}
+
+// A slot is "past" once it has started (it can no longer be booked, but it was
+// never taken by anyone), "taken" if a real CONFIRMED / unexpired-hold
+// reservation blocks it, otherwise "available". Past wins over taken so the UI
+// can drop elapsed slots instead of making them look booked by someone else.
+export type SlotStatus = "available" | "taken" | "past";
+
+export function getSlotStatuses(
+  date: string,
+  takenStartTimes: ReadonlySet<string>,
+  nowMs: number,
+): { startTime: string; status: SlotStatus }[] {
+  return getSlotStartTimes().map((startTime) => {
+    const { startAt } = slotToUtcRange(date, startTime);
+    const status: SlotStatus =
+      startAt.getTime() <= nowMs ? "past" : takenStartTimes.has(startTime) ? "taken" : "available";
+    return { startTime, status };
+  });
+}
+
+// The first date (in the given order) that still has at least one genuinely
+// bookable slot, or null if none do. `takenByDate` maps a date to the start
+// times blocked by real reservations on it — nothing is assumed free.
+export function firstDateWithOpenSlot(
+  dates: string[],
+  takenByDate: ReadonlyMap<string, ReadonlySet<string>>,
+  nowMs: number,
+): string | null {
+  const none: ReadonlySet<string> = new Set();
+  for (const date of dates) {
+    const statuses = getSlotStatuses(date, takenByDate.get(date) ?? none, nowMs);
+    if (statuses.some((s) => s.status === "available")) return date;
+  }
+  return null;
 }

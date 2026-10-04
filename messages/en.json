@@ -54,6 +54,8 @@
     "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     "chooseDateLabel": "Choose a booking date",
     "chooseTimeLabel": "Choose a time",
+    "noSlotsLeft": "No more time slots are left on this day. Please choose another date.",
+    "fullyBooked": "All slots on this day are booked. Please choose another date.",
     "loadFailed": "Couldn't load availability. Please try again.",
     "price": "Price",
     "bookCta": "Book",

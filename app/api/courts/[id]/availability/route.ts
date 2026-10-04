@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSlotStartTimes, isValidDateString, slotToUtcRange } from "@/lib/reservations/availability";
+import { getSlotStatuses, isValidDateString } from "@/lib/reservations/availability";
+import { blockingReservationsWhere } from "@/lib/reservations/first-available";
 
 // Availability is always computed server-side from the database — the
 // frontend never calculates it itself (ARCHITECTURE.md §7).
@@ -23,31 +24,25 @@ export async function GET(
   // A slot is unavailable if it's CONFIRMED, or still an unexpired
   // PENDING_PAYMENT hold. An expired-but-not-yet-swept PENDING_PAYMENT row
   // (the M6 cron hasn't run) is correctly treated as available here.
+  const now = new Date();
   const blocking = await prisma.reservation.findMany({
     where: {
       courtId,
       date: new Date(`${date}T00:00:00.000Z`),
-      OR: [
-        { status: "CONFIRMED" },
-        { status: "PENDING_PAYMENT", expiresAt: { gt: new Date() } },
-      ],
+      ...blockingReservationsWhere(now),
     },
     select: { startTime: true },
   });
   const takenStartTimes = new Set(blocking.map((r) => r.startTime));
-  const now = Date.now();
 
-  const slots = getSlotStartTimes().map((startTime) => {
-    const { startAt } = slotToUtcRange(date, startTime);
-    return {
-      startTime,
-      // A slot already blocked by another reservation, or one that's
-      // already started (relevant for today — POST /api/reservations
-      // rejects it either way, but the availability list should say so
-      // upfront rather than let a user pick a slot that's already gone).
-      available: !takenStartTimes.has(startTime) && startAt.getTime() > now,
-    };
-  });
+  // `status` distinguishes a slot someone holds ("taken") from one that has
+  // simply already started ("past"), so the UI never presents elapsed time as
+  // another customer's booking. POST /api/reservations rejects both anyway.
+  const slots = getSlotStatuses(date, takenStartTimes, now.getTime()).map(({ startTime, status }) => ({
+    startTime,
+    available: status === "available",
+    status,
+  }));
 
   return NextResponse.json({ courtId, date, slots });
 }
